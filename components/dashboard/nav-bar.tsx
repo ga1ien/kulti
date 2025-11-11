@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,15 @@ interface NavBarProps {
 export function NavBar({ profile }: NavBarProps) {
   const router = useRouter()
   const [showMenu, setShowMenu] = useState(false)
+  const [showCursor, setShowCursor] = useState(true)
+
+  useEffect(() => {
+    const cursorInterval = setInterval(() => {
+      setShowCursor(prev => !prev)
+    }, 530)
+
+    return () => clearInterval(cursorInterval)
+  }, [])
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -28,8 +37,8 @@ export function NavBar({ profile }: NavBarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <Link href="/dashboard" className="font-mono text-2xl font-bold hover:text-[#00ff88] transition-colors">
-            KULTI
+          <Link href="/dashboard" className="font-mono text-2xl font-bold hover:text-lime-400 transition-colors">
+            kulti<span className={`text-lime-400 transition-opacity duration-100 ${showCursor ? "opacity-100" : "opacity-0"}`}>_</span>
           </Link>
 
           {/* Navigation Links */}
@@ -46,7 +55,7 @@ export function NavBar({ profile }: NavBarProps) {
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/dashboard?create=true")}
-              className="hidden md:block bg-[#00ff88] text-black font-bold text-base px-8 py-3 rounded-lg hover:scale-105 transition-transform duration-300"
+              className="hidden md:block bg-lime-400 hover:bg-lime-500 text-black font-bold text-base px-8 py-3 rounded-lg transition-colors duration-300"
             >
               Create Session
             </button>
@@ -57,7 +66,7 @@ export function NavBar({ profile }: NavBarProps) {
                 onClick={() => setShowMenu(!showMenu)}
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#2a2a2a] transition-colors"
               >
-                <div className="w-10 h-10 rounded-full bg-[#00ff88] flex items-center justify-center text-black font-bold text-lg">
+                <div className="w-10 h-10 rounded-full bg-lime-400 flex items-center justify-center text-black font-bold text-lg">
                   {profile.display_name[0].toUpperCase()}
                 </div>
               </button>

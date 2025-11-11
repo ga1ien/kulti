@@ -12,13 +12,13 @@ interface VideoTileProps {
 
 export function VideoTile({ peer, isLocal, isScreenShare }: VideoTileProps) {
   const { videoRef } = useVideo({
-    trackId: isScreenShare ? peer.auxiliaryTracks[0]?.id : peer.videoTrack,
+    trackId: isScreenShare ? (peer.auxiliaryTracks[0] as any)?.id : peer.videoTrack as string | undefined,
   })
 
-  const isAudioEnabled = peer.audioTrack?.enabled
+  const isAudioEnabled = peer.audioTrack !== undefined
   const isVideoEnabled = isScreenShare
     ? true
-    : peer.videoTrack && !peer.videoTrack?.degraded
+    : peer.videoTrack !== undefined
 
   return (
     <div className="relative w-full h-full bg-surfaceElevated rounded-lg overflow-hidden">

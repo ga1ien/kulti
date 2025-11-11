@@ -93,14 +93,14 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-[#00ff88] text-black font-bold text-xl px-12 py-5 rounded-xl hover:scale-105 transition-transform duration-300 disabled:opacity-50 disabled:hover:scale-100"
+        className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-xl px-12 py-5 rounded-xl transition-colors duration-300 disabled:opacity-50 disabled:hover:scale-100"
       >
         {isSubmitting ? "Signing in..." : "Sign In"}
       </button>
 
       <p className="text-center text-lg text-[#a1a1aa]">
         Don't have an account?{" "}
-        <Link href="/signup" className="text-[#00ff88] hover:underline">
+        <Link href="/signup" className="text-lime-400 hover:underline">
           Sign up
         </Link>
       </p>

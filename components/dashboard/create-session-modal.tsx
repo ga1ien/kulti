@@ -122,8 +122,8 @@ export function CreateSessionModal({ onClose }: CreateSessionModalProps) {
                 onClick={() => setValue("isPublic", true)}
                 className={`flex-1 p-5 rounded-xl border ${
                   isPublic
-                    ? "border-[#00ff88] bg-[#00ff88]/10"
-                    : "border-[#27272a] hover:border-[#00ff88]/30"
+                    ? "border-lime-400 bg-lime-400/10"
+                    : "border-[#27272a] hover:border-lime-400/30"
                 } transition-all duration-300`}
               >
                 <div className="font-bold text-lg">Public</div>
@@ -134,8 +134,8 @@ export function CreateSessionModal({ onClose }: CreateSessionModalProps) {
                 onClick={() => setValue("isPublic", false)}
                 className={`flex-1 p-5 rounded-xl border ${
                   !isPublic
-                    ? "border-[#00ff88] bg-[#00ff88]/10"
-                    : "border-[#27272a] hover:border-[#00ff88]/30"
+                    ? "border-lime-400 bg-lime-400/10"
+                    : "border-[#27272a] hover:border-lime-400/30"
                 } transition-all duration-300`}
               >
                 <div className="font-bold text-lg">Private</div>
@@ -151,7 +151,7 @@ export function CreateSessionModal({ onClose }: CreateSessionModalProps) {
             <select
               id="maxParticipants"
               {...register("maxParticipants", { valueAsNumber: true })}
-              className="w-full h-14 rounded-lg border border-[#27272a] bg-[#0a0a0a] px-4 py-2 text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00ff88]"
+              className="w-full h-14 rounded-lg border border-[#27272a] bg-[#0a0a0a] px-4 py-2 text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400"
             >
               <option value={2}>2 people</option>
               <option value={3}>3 people</option>
@@ -162,11 +162,11 @@ export function CreateSessionModal({ onClose }: CreateSessionModalProps) {
           </div>
 
           <div>
-            <label className="flex items-center gap-4 cursor-pointer p-5 rounded-xl border border-[#27272a] hover:border-[#00ff88]/30 transition-all duration-300">
+            <label className="flex items-center gap-4 cursor-pointer p-5 rounded-xl border border-[#27272a] hover:border-lime-400/30 transition-all duration-300">
               <input
                 type="checkbox"
                 {...register("enableOBS")}
-                className="w-5 h-5 rounded border-[#27272a] text-[#00ff88] focus:ring-[#00ff88] focus:ring-offset-0"
+                className="w-5 h-5 rounded border-[#27272a] text-lime-400 focus:ring-lime-400 focus:ring-offset-0"
               />
               <div className="flex-1">
                 <div className="font-bold text-base">Enable OBS Streaming</div>
@@ -194,7 +194,7 @@ export function CreateSessionModal({ onClose }: CreateSessionModalProps) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-[#00ff88] text-black font-bold text-lg px-8 py-4 rounded-xl hover:scale-105 transition-transform duration-300 disabled:opacity-50 disabled:hover:scale-100"
+              className="flex-1 bg-lime-400 hover:bg-lime-500 text-black font-bold text-lg px-8 py-4 rounded-xl transition-colors duration-300 disabled:opacity-50 disabled:hover:scale-100"
             >
               {isSubmitting ? "Creating..." : "Create Session"}
             </button>

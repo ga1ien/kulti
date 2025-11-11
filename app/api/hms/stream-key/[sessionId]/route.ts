@@ -4,7 +4,7 @@ import { getStreamKey } from "@/lib/hms/server"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const sessionId = params.sessionId
+    const { sessionId } = await params
 
     // Get session
     const { data: session } = await supabase

@@ -3,13 +3,13 @@ import { redirect } from "next/navigation"
 import { SessionRoom } from "@/components/session/session-room"
 
 interface SessionPageProps {
-  params: {
+  params: Promise<{
     roomCode: string
-  }
+  }>
 }
 
 export default async function SessionPage({ params }: SessionPageProps) {
-  const { roomCode } = params
+  const { roomCode } = await params
   const supabase = await createClient()
 
   const {

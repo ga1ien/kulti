@@ -95,7 +95,7 @@ function SessionRoomContent({
           <p className="text-red-500 text-2xl font-bold">{error}</p>
           <button
             onClick={() => router.push("/dashboard")}
-            className="bg-[#00ff88] text-black font-bold text-lg px-12 py-4 rounded-xl hover:scale-105 transition-transform duration-300"
+            className="bg-lime-400 hover:bg-lime-500 text-black font-bold text-lg px-12 py-4 rounded-xl transition-colors duration-300"
           >
             Back to Dashboard
           </button>
@@ -108,7 +108,7 @@ function SessionRoomContent({
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
         <div className="text-center animate-fade-in">
-          <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#00ff88] mx-auto mb-6"></div>
+          <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-lime-400 mx-auto mb-6"></div>
           <p className="text-2xl text-[#a1a1aa]">Joining session...</p>
         </div>
       </div>
@@ -136,7 +136,7 @@ function SessionRoomContent({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="px-5 py-2 bg-[#00ff88]/10 text-[#00ff88] text-lg rounded-lg font-mono font-bold">
+            <div className="px-5 py-2 bg-lime-400/10 text-lime-400 text-lg rounded-lg font-mono font-bold">
               {session.room_code}
             </div>
           </div>

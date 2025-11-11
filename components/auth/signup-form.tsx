@@ -194,14 +194,14 @@ export function SignupForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-[#00ff88] text-black font-bold text-xl px-12 py-5 rounded-xl hover:scale-105 transition-transform duration-300 disabled:opacity-50 disabled:hover:scale-100"
+        className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-xl px-12 py-5 rounded-xl transition-colors duration-300 disabled:opacity-50 disabled:hover:scale-100"
       >
         {isSubmitting ? "Creating account..." : "Create Account"}
       </button>
 
       <p className="text-center text-lg text-[#a1a1aa]">
         Already have an account?{" "}
-        <Link href="/login" className="text-[#00ff88] hover:underline">
+        <Link href="/login" className="text-lime-400 hover:underline">
           Sign in
         </Link>
       </p>

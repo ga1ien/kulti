@@ -45,7 +45,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#00ff88]"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-lime-400"></div>
       </div>
     )
   }
@@ -64,7 +64,7 @@ export default function DashboardPage() {
         </div>
         <button
           onClick={() => router.push("/dashboard?create=true")}
-          className="bg-[#00ff88] text-black font-bold text-xl px-12 py-5 rounded-xl hover:scale-105 transition-transform duration-300 whitespace-nowrap"
+          className="bg-lime-400 hover:bg-lime-500 text-black font-bold text-xl px-12 py-5 rounded-xl transition-colors duration-300 whitespace-nowrap"
         >
           Create Session
         </button>
@@ -87,7 +87,7 @@ export default function DashboardPage() {
             </p>
             <button
               onClick={() => router.push("/dashboard?create=true")}
-              className="bg-[#00ff88] text-black font-bold text-xl px-12 py-5 rounded-xl hover:scale-105 transition-transform duration-300"
+              className="bg-lime-400 hover:bg-lime-500 text-black font-bold text-xl px-12 py-5 rounded-xl transition-colors duration-300"
             >
               Create Session
             </button>

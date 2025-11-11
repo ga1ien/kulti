@@ -7,7 +7,7 @@ export function WhatThisIs() {
         {/* Section header */}
         <div className="text-center mb-16">
           <h2 className="font-mono text-5xl md:text-6xl font-bold mb-6">
-            This Is Kulti
+            <span className="text-lime-400 mr-4">&gt;</span>This Is Kulti
           </h2>
           <p className="text-2xl md:text-3xl text-[#a1a1aa] max-w-3xl mx-auto">
             The place where the future gets built. Together. Live.
@@ -17,8 +17,8 @@ export function WhatThisIs() {
         {/* Three cards */}
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {/* Watch */}
-          <div className="group p-12 rounded-2xl border border-[#27272a] bg-[#1a1a1a]/50 backdrop-blur-sm hover:border-[#00ff88] hover:-translate-y-1 transition-all duration-300">
-            <h3 className="font-mono text-2xl font-bold text-[#00ff88] mb-4">
+          <div className="group p-12 rounded-2xl border border-[#27272a] bg-[#1a1a1a]/50 backdrop-blur-sm hover:border-lime-400 hover:-translate-y-1 transition-all duration-300">
+            <h3 className="font-mono text-2xl font-bold text-lime-400 mb-4">
               Watch
             </h3>
             <p className="text-lg text-[#a1a1aa] leading-relaxed">
@@ -32,8 +32,8 @@ export function WhatThisIs() {
           </div>
 
           {/* Build */}
-          <div className="group p-12 rounded-2xl border border-[#27272a] bg-[#1a1a1a]/50 backdrop-blur-sm hover:border-[#00ff88] hover:-translate-y-1 transition-all duration-300">
-            <h3 className="font-mono text-2xl font-bold text-[#00ff88] mb-4">
+          <div className="group p-12 rounded-2xl border border-[#27272a] bg-[#1a1a1a]/50 backdrop-blur-sm hover:border-lime-400 hover:-translate-y-1 transition-all duration-300">
+            <h3 className="font-mono text-2xl font-bold text-lime-400 mb-4">
               Build
             </h3>
             <p className="text-lg text-[#a1a1aa] leading-relaxed">
@@ -48,8 +48,8 @@ export function WhatThisIs() {
           </div>
 
           {/* Become */}
-          <div className="group p-12 rounded-2xl border border-[#27272a] bg-[#1a1a1a]/50 backdrop-blur-sm hover:border-[#00ff88] hover:-translate-y-1 transition-all duration-300">
-            <h3 className="font-mono text-2xl font-bold text-[#00ff88] mb-4">
+          <div className="group p-12 rounded-2xl border border-[#27272a] bg-[#1a1a1a]/50 backdrop-blur-sm hover:border-lime-400 hover:-translate-y-1 transition-all duration-300">
+            <h3 className="font-mono text-2xl font-bold text-lime-400 mb-4">
               Become
             </h3>
             <p className="text-lg text-[#a1a1aa] leading-relaxed">
