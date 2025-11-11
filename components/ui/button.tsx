@@ -15,9 +15,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <Comp
         className={cn(
-          "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 disabled:pointer-events-none disabled:opacity-50",
           {
-            "bg-primary text-black hover:bg-[#00cc6f]": variant === "primary",
+            "bg-lime-400 text-black hover:bg-lime-500": variant === "primary",
             "bg-gray-800 text-white hover:bg-gray-700": variant === "secondary",
             "bg-transparent hover:bg-gray-800 border border-gray-700": variant === "ghost",
             "h-10 px-4 py-2": size === "default",

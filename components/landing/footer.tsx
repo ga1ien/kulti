@@ -2,23 +2,19 @@
 
 export function Footer() {
   return (
-    <footer className="relative py-20 px-6 bg-[#0a0a0a] border-t border-[#27272a]">
+    <footer className="relative py-20 px-6 bg-[#0a0a0a]">
       <div className="max-w-4xl mx-auto text-center space-y-6">
         <p className="text-lg text-[#a1a1aa]">
           Follow{" "}
           <a
-            href="https://twitter.com/kulti"
+            href="https://twitter.com/kulti.club"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#00ff88] underline hover:text-white transition-colors"
+            className="text-lime-400 underline hover:text-white transition-colors"
           >
-            @kulti
+            @kulti.club
           </a>{" "}
-          — We're building this live
-        </p>
-
-        <p className="text-sm text-[#a1a1aa]">
-          Built in public. Powered by 100ms.
+          — We're building the future
         </p>
 
         <p className="text-xl italic text-[#a1a1aa] max-w-2xl mx-auto pt-6">
@@ -27,7 +23,19 @@ export function Footer() {
           shouldn't build in silence."
         </p>
 
-        <p className="text-sm text-[#71717a] pt-6">
+        <p className="text-sm text-[#a1a1aa] pt-6">
+          Powered by{" "}
+          <a
+            href="https://braintied.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-lime-400 underline hover:text-white transition-colors"
+          >
+            Braintied
+          </a>
+        </p>
+
+        <p className="text-sm text-[#71717a] pt-2">
           © 2025 Kulti
         </p>
       </div>

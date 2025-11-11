@@ -13,10 +13,10 @@ export function TheMoment() {
         </p>
 
         <p className="text-4xl md:text-5xl font-bold text-white animate-fade-in-delay-2">
-          You're building the future with AI in your bedroom.
+          You're building the future<br />with AI in your bedroom.
         </p>
 
-        <p className="text-3xl md:text-4xl text-[#00ff88] font-semibold animate-fade-in-delay-2">
+        <p className="text-3xl md:text-4xl text-lime-400 font-semibold animate-fade-in-delay-2">
           And nobody's watching.
         </p>
       </div>
