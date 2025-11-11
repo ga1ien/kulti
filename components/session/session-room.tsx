@@ -13,8 +13,9 @@ import { VideoGrid } from "./video-grid"
 import { Controls } from "./controls"
 import { ChatSidebar } from "./chat-sidebar"
 import { OBSPanel } from "./obs-panel"
+import { SessionEndModal } from "./session-end-modal"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, TrendingUp } from "lucide-react"
 
 interface SessionRoomProps {
   session: Session & { host: Profile }
@@ -40,6 +41,9 @@ function SessionRoomContent({
   const [error, setError] = useState<string | null>(null)
   const [watchDuration, setWatchDuration] = useState(0)
   const [estimatedCredits, setEstimatedCredits] = useState(0)
+  const [previousCredits, setPreviousCredits] = useState(0)
+  const [showEndModal, setShowEndModal] = useState(false)
+  const [showCreditsAnimation, setShowCreditsAnimation] = useState(false)
 
   useEffect(() => {
     const joinRoom = async () => {
@@ -109,6 +113,14 @@ function SessionRoomContent({
         if (response.ok) {
           const data = await response.json()
           setWatchDuration(data.watch_duration_seconds)
+
+          // Animate credit increase
+          if (data.estimated_credits > previousCredits && previousCredits > 0) {
+            setShowCreditsAnimation(true)
+            setTimeout(() => setShowCreditsAnimation(false), 1000)
+          }
+
+          setPreviousCredits(estimatedCredits)
           setEstimatedCredits(data.estimated_credits)
         }
       } catch (error) {
@@ -172,6 +184,16 @@ function SessionRoomContent({
 
   const handleLeave = () => {
     hmsActions.leave()
+    // Show session end modal if user earned credits
+    if (estimatedCredits > 0) {
+      setShowEndModal(true)
+    } else {
+      router.push("/dashboard")
+    }
+  }
+
+  const handleCloseEndModal = () => {
+    setShowEndModal(false)
     router.push("/dashboard")
   }
 
@@ -223,12 +245,21 @@ function SessionRoomContent({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {/* Credits Earned */}
+            {/* Credits Earned with Animation */}
             {watchDuration > 0 && (
-              <div className="px-4 py-2 bg-[#1a1a1a] border border-[#27272a] rounded-lg">
-                <div className="text-xs text-[#a1a1aa] mb-1">Earning</div>
+              <div className={`px-4 py-2 bg-[#1a1a1a] border rounded-lg transition-all duration-300 ${
+                showCreditsAnimation
+                  ? "border-lime-400 scale-105 shadow-lg shadow-lime-400/20"
+                  : "border-[#27272a]"
+              }`}>
+                <div className="flex items-center gap-2 text-xs text-[#a1a1aa] mb-1">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>Earning</span>
+                </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-lg font-bold text-lime-400">
+                  <span className={`font-mono text-lg font-bold transition-all duration-300 ${
+                    showCreditsAnimation ? "scale-110" : ""
+                  } text-lime-400`}>
                     +{estimatedCredits}
                   </span>
                   <span className="text-xs text-[#71717a]">credits</span>
@@ -264,6 +295,13 @@ function SessionRoomContent({
           </div>
         </div>
       </div>
+
+      {/* Session End Modal */}
+      <SessionEndModal
+        isOpen={showEndModal}
+        onClose={handleCloseEndModal}
+        sessionId={session.id}
+      />
     </div>
   )
 }
