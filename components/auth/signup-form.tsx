@@ -8,7 +8,6 @@ import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
-import Link from "next/link"
 
 const signupSchema = z.object({
   inviteCode: z.string().min(1, "Invite code is required"),
@@ -41,23 +40,17 @@ export function SignupForm() {
       setError(null)
       const supabase = createClient()
 
-      // Check invite code validity
-      const { data: invite, error: inviteError } = await supabase
-        .from("invites")
-        .select("*")
-        .eq("code", data.inviteCode)
-        .single()
+      // Validate invite code via API
+      const validateResponse = await fetch('/api/invites/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: data.inviteCode }),
+      })
 
-      if (inviteError || !invite) {
-        throw new Error("Invalid invite code")
-      }
+      const validateResult = await validateResponse.json()
 
-      if (invite.current_uses >= invite.max_uses) {
-        throw new Error("Invite code has been fully used")
-      }
-
-      if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-        throw new Error("Invite code has expired")
+      if (!validateResult.isValid) {
+        throw new Error(validateResult.error || 'Invalid invite code')
       }
 
       // Check username availability
@@ -79,20 +72,23 @@ export function SignupForm() {
           data: {
             username: data.username,
             display_name: data.displayName,
+            invite_code: data.inviteCode,
           },
         },
       })
 
       if (authError) throw authError
 
-      // Update invite usage
-      await supabase
-        .from("invites")
-        .update({
-          current_uses: invite.current_uses + 1,
-          used_by: authData.user?.id,
+      // Record invite usage and award referral credits
+      if (authData.user) {
+        await supabase.rpc('use_invite_code', {
+          p_code: data.inviteCode,
+          p_user_id: authData.user.id,
+          p_metadata: {
+            signup_timestamp: new Date().toISOString(),
+          },
         })
-        .eq("id", invite.id)
+      }
 
       router.push("/dashboard")
       router.refresh()
@@ -110,7 +106,7 @@ export function SignupForm() {
         <Input
           id="inviteCode"
           type="text"
-          placeholder="VIBE-XXXX"
+          placeholder="K1A2B"
           {...register("inviteCode")}
           className="h-14 text-lg"
         />
@@ -198,13 +194,6 @@ export function SignupForm() {
       >
         {isSubmitting ? "Creating account..." : "Create Account"}
       </button>
-
-      <p className="text-center text-lg text-[#a1a1aa]">
-        Already have an account?{" "}
-        <Link href="/login" className="text-lime-400 hover:underline">
-          Sign in
-        </Link>
-      </p>
     </form>
   )
 }

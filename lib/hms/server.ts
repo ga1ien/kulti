@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken"
+import * as jwt from "jsonwebtoken"
 
 const HMS_APP_ACCESS_KEY = process.env.HMS_APP_ACCESS_KEY!
 const HMS_APP_SECRET = process.env.HMS_APP_SECRET!
@@ -14,8 +14,33 @@ export async function createHMSRoom(name: string, description?: string) {
       body: JSON.stringify({
         name,
         description: description || "",
-        recording_info: {
-          enabled: false,
+        settings: {
+          region: "us",
+          recording_info: {
+            enabled: true,
+          },
+          simulcast: {
+            video: {
+              enabled: true,
+              layers: [
+                {
+                  rid: "f",
+                  max_bitrate: 700000,
+                  scale_resolution_down_by: 1
+                },
+                {
+                  rid: "h",
+                  max_bitrate: 350000,
+                  scale_resolution_down_by: 2
+                },
+                {
+                  rid: "q",
+                  max_bitrate: 100000,
+                  scale_resolution_down_by: 4
+                },
+              ],
+            },
+          },
         },
       }),
     })
@@ -39,6 +64,9 @@ export function generateHMSToken(
   userId: string,
   role: "host" | "presenter" | "viewer" = "viewer"
 ) {
+  const now = Math.floor(Date.now() / 1000)
+  const expiresIn = 2 * 60 * 60
+
   const payload = {
     access_key: HMS_APP_ACCESS_KEY,
     room_id: roomId,
@@ -46,28 +74,44 @@ export function generateHMSToken(
     role: role,
     type: "app",
     version: 2,
-    iat: Math.floor(Date.now() / 1000),
-    nbf: Math.floor(Date.now() / 1000),
+    iat: now,
+    nbf: now,
+    exp: now + expiresIn,
+    jti: \`\${userId}-\${Date.now()}\`,
   }
 
   const token = jwt.sign(payload, HMS_APP_SECRET, {
     algorithm: "HS256",
-    expiresIn: "24h",
-    jwtid: `${userId}-${Date.now()}`,
+    expiresIn: "2h",
+    jwtid: \`\${userId}-\${Date.now()}\`,
   })
 
-  return token
+  return {
+    token,
+    expiresAt: (now + expiresIn) * 1000,
+  }
+}
+
+export function verifyHMSToken(token: string): { valid: boolean; payload?: any } {
+  try {
+    const payload = jwt.verify(token, HMS_APP_SECRET, {
+      algorithms: ["HS256"],
+    })
+    return { valid: true, payload }
+  } catch (error) {
+    return { valid: false }
+  }
 }
 
 export async function endHMSRoom(roomId: string) {
   try {
     const response = await fetch(
-      `https://api.100ms.live/v2/rooms/${roomId}/end`,
+      \`https://api.100ms.live/v2/rooms/\${roomId}/end\`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${HMS_APP_ACCESS_KEY}:${HMS_APP_SECRET}`,
+          Authorization: \`Bearer \${HMS_APP_ACCESS_KEY}:\${HMS_APP_SECRET}\`,
         },
         body: JSON.stringify({
           lock: true,
@@ -87,16 +131,15 @@ export async function endHMSRoom(roomId: string) {
   }
 }
 
-// RTMP Ingestion - allows OBS to stream into 100ms rooms
 export async function createStreamKey(roomId: string) {
   try {
     const response = await fetch(
-      `https://api.100ms.live/v2/stream-key/room/${roomId}`,
+      \`https://api.100ms.live/v2/stream-key/room/\${roomId}\`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${HMS_APP_ACCESS_KEY}:${HMS_APP_SECRET}`,
+          Authorization: \`Bearer \${HMS_APP_ACCESS_KEY}:\${HMS_APP_SECRET}\`,
         },
       }
     )
@@ -122,12 +165,12 @@ export async function createStreamKey(roomId: string) {
 export async function getStreamKey(roomId: string) {
   try {
     const response = await fetch(
-      `https://api.100ms.live/v2/stream-key/room/${roomId}`,
+      \`https://api.100ms.live/v2/stream-key/room/\${roomId}\`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${HMS_APP_ACCESS_KEY}:${HMS_APP_SECRET}`,
+          Authorization: \`Bearer \${HMS_APP_ACCESS_KEY}:\${HMS_APP_SECRET}\`,
         },
       }
     )
@@ -157,12 +200,12 @@ export async function getStreamKey(roomId: string) {
 export async function disableStreamKey(streamKeyId: string) {
   try {
     const response = await fetch(
-      `https://api.100ms.live/v2/stream-key/${streamKeyId}`,
+      \`https://api.100ms.live/v2/stream-key/\${streamKeyId}\`,
       {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${HMS_APP_ACCESS_KEY}:${HMS_APP_SECRET}`,
+          Authorization: \`Bearer \${HMS_APP_ACCESS_KEY}:\${HMS_APP_SECRET}\`,
         },
       }
     )
@@ -174,6 +217,109 @@ export async function disableStreamKey(streamKeyId: string) {
     return true
   } catch (error) {
     console.error("Error disabling stream key:", error)
+    throw error
+  }
+}
+
+export async function startRecording(roomId: string) {
+  try {
+    const response = await fetch(
+      \`https://api.100ms.live/v2/recordings/room/\${roomId}/start\`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: \`Bearer \${HMS_APP_ACCESS_KEY}:\${HMS_APP_SECRET}\`,
+        },
+        body: JSON.stringify({
+          recording_type: "composite",
+          resolution: {
+            width: 1920,
+            height: 1080,
+          },
+          meeting_url: \`https://app.kulti.com/session/\${roomId}\`,
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error("HMS start recording error:", error)
+      throw new Error("Failed to start recording")
+    }
+
+    const data = await response.json()
+    return {
+      id: data.id,
+      status: data.status,
+    }
+  } catch (error) {
+    console.error("Error starting recording:", error)
+    throw error
+  }
+}
+
+export async function stopRecording(roomId: string) {
+  try {
+    const response = await fetch(
+      \`https://api.100ms.live/v2/recordings/room/\${roomId}/stop\`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: \`Bearer \${HMS_APP_ACCESS_KEY}:\${HMS_APP_SECRET}\`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error("HMS stop recording error:", error)
+      throw new Error("Failed to stop recording")
+    }
+
+    const data = await response.json()
+    return {
+      id: data.id,
+      status: data.status,
+    }
+  } catch (error) {
+    console.error("Error stopping recording:", error)
+    throw error
+  }
+}
+
+export async function getRecordingStatus(roomId: string) {
+  try {
+    const response = await fetch(
+      \`https://api.100ms.live/v2/recordings/room/\${roomId}\`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: \`Bearer \${HMS_APP_ACCESS_KEY}:\${HMS_APP_SECRET}\`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null
+      }
+      const error = await response.text()
+      console.error("HMS get recording status error:", error)
+      throw new Error("Failed to get recording status")
+    }
+
+    const data = await response.json()
+    return {
+      id: data.id,
+      status: data.status,
+      recording_url: data.recording_url,
+      duration: data.duration,
+    }
+  } catch (error) {
+    console.error("Error getting recording status:", error)
     throw error
   }
 }

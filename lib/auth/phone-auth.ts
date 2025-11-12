@@ -1,0 +1,252 @@
+import { createClient } from '@/lib/supabase/client'
+
+export type PhoneAuthResult = {
+  success: boolean
+  error?: string
+  data?: any
+}
+
+/**
+ * Format phone number to E.164 format (e.g., +12345678900)
+ * Already formatted by PhoneInput component, but this validates it
+ */
+export function formatPhoneNumber(phone: string): string {
+  // Remove all non-digit characters except the leading +
+  const cleaned = phone.replace(/[^\d+]/g, '')
+
+  // Ensure it starts with +
+  if (!cleaned.startsWith('+')) {
+    throw new Error('Phone number must start with country code (e.g., +1)')
+  }
+
+  return cleaned
+}
+
+/**
+ * Validate phone number format
+ */
+export function validatePhoneNumber(phone: string): { valid: boolean; error?: string } {
+  try {
+    const formatted = formatPhoneNumber(phone)
+
+    // Basic validation: should be + followed by 7-15 digits
+    const phoneRegex = /^\+\d{7,15}$/
+    if (!phoneRegex.test(formatted)) {
+      return {
+        valid: false,
+        error: 'Please enter a valid phone number with country code',
+      }
+    }
+
+    return { valid: true }
+  } catch (error) {
+    return {
+      valid: false,
+      error: error instanceof Error ? error.message : 'Invalid phone number',
+    }
+  }
+}
+
+/**
+ * Send OTP to phone number
+ */
+export async function sendPhoneOTP(phone: string): Promise<PhoneAuthResult> {
+  try {
+    const validation = validatePhoneNumber(phone)
+    if (!validation.valid) {
+      return { success: false, error: validation.error }
+    }
+
+    const formatted = formatPhoneNumber(phone)
+    const supabase = createClient()
+
+    const { data, error } = await supabase.auth.signInWithOtp({
+      phone: formatted,
+      options: {
+        channel: 'sms',
+      },
+    })
+
+    if (error) {
+      console.error('Send OTP error:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to send verification code',
+      }
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Send OTP error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send verification code',
+    }
+  }
+}
+
+/**
+ * Verify OTP code
+ */
+export async function verifyPhoneOTP(
+  phone: string,
+  token: string
+): Promise<PhoneAuthResult> {
+  try {
+    const formatted = formatPhoneNumber(phone)
+    const supabase = createClient()
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone: formatted,
+      token,
+      type: 'sms',
+    })
+
+    if (error) {
+      console.error('Verify OTP error:', error)
+      return {
+        success: false,
+        error: error.message || 'Invalid or expired verification code',
+      }
+    }
+
+    if (!data.user) {
+      return {
+        success: false,
+        error: 'Verification failed. Please try again.',
+      }
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Verify OTP error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to verify code',
+    }
+  }
+}
+
+/**
+ * Complete phone signup by creating profile
+ * This is called after OTP verification
+ */
+export async function completePhoneSignup(params: {
+  userId: string
+  phone: string
+  inviteCode: string
+  username: string
+  displayName: string
+  email: string
+  password: string
+}): Promise<PhoneAuthResult> {
+  try {
+    const supabase = createClient()
+
+    // Update the user with email and password
+    const { error: updateError } = await supabase.auth.updateUser({
+      email: params.email,
+      password: params.password,
+    })
+
+    if (updateError) {
+      console.error('Update user error:', updateError)
+      return {
+        success: false,
+        error: 'Failed to add email to account',
+      }
+    }
+
+    // Check if profile already exists
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .eq('id', params.userId)
+      .single()
+
+    if (existingProfile) {
+      return {
+        success: false,
+        error: 'Account already has a profile. Please try logging in instead.',
+      }
+    }
+
+    // Check if username is taken
+    const { data: existingUsername } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', params.username)
+      .single()
+
+    if (existingUsername) {
+      return {
+        success: false,
+        error: `Username "${params.username}" is already taken. Please choose another.`,
+      }
+    }
+
+    // Create profile
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: params.userId,
+      username: params.username,
+      display_name: params.displayName,
+      is_approved: true, // Auto-approve phone-verified users
+    })
+
+    if (profileError) {
+      console.error('Create profile error:', profileError)
+      return {
+        success: false,
+        error: `Failed to create profile: ${profileError.message}`,
+      }
+    }
+
+    // Record invite code usage and award credits
+    const { error: inviteError } = await supabase.rpc('use_invite_code', {
+      p_code: params.inviteCode,
+      p_user_id: params.userId,
+      p_metadata: {
+        signup_method: 'phone',
+        signup_timestamp: new Date().toISOString(),
+        phone: params.phone,
+      },
+    })
+
+    if (inviteError) {
+      console.error('Use invite code error:', inviteError)
+      // Don't fail the whole signup if invite code fails
+      // User is already created at this point
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Complete signup error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to complete signup',
+    }
+  }
+}
+
+/**
+ * Check if phone number is already registered
+ */
+export async function checkPhoneExists(phone: string): Promise<boolean> {
+  try {
+    const formatted = formatPhoneNumber(phone)
+    const supabase = createClient()
+
+    // Try to sign in - if account exists, it will send OTP
+    // If account doesn't exist, Supabase will still return success
+    // (it creates a new user on OTP verification)
+    // So we can't actually check this directly with phone auth
+
+    // Instead, we'll let the flow handle it naturally:
+    // - If phone exists, verifying OTP logs them in
+    // - If phone doesn't exist, verifying OTP creates new user
+
+    return false // For now, assume we always allow the flow
+  } catch (error) {
+    return false
+  }
+}

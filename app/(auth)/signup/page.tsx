@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { SignupForm } from "@/components/auth/signup-form"
+import { PhoneSignupForm } from "@/components/auth/phone-signup-form"
 import Link from "next/link"
 
 export default function SignupPage() {
@@ -12,15 +12,23 @@ export default function SignupPage() {
 
       <div className="bg-[#1a1a1a]/50 backdrop-blur-sm border border-[#27272a] rounded-2xl p-12 hover:border-lime-400/30 transition-all duration-300">
         <Suspense fallback={<div className="text-center p-4">Loading...</div>}>
-          <SignupForm />
+          <PhoneSignupForm />
         </Suspense>
       </div>
 
-      <p className="text-center text-lg text-[#71717a]">
-        <Link href="/" className="hover:text-lime-400 transition-colors">
-          ← Back to home
-        </Link>
-      </p>
+      <div className="text-center space-y-3">
+        <p className="text-lg text-[#71717a]">
+          Already have an account?{' '}
+          <Link href="/login" className="text-lime-400 hover:text-lime-300 transition-colors">
+            Sign in
+          </Link>
+        </p>
+        <p className="text-lg text-[#71717a]">
+          <Link href="/" className="hover:text-lime-400 transition-colors">
+            ← Back to home
+          </Link>
+        </p>
+      </div>
     </div>
   )
 }

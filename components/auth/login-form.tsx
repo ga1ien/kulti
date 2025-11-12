@@ -8,7 +8,6 @@ import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
-import Link from "next/link"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -97,13 +96,6 @@ export function LoginForm() {
       >
         {isSubmitting ? "Signing in..." : "Sign In"}
       </button>
-
-      <p className="text-center text-lg text-[#a1a1aa]">
-        Don't have an account?{" "}
-        <Link href="/signup" className="text-lime-400 hover:underline">
-          Sign up
-        </Link>
-      </p>
     </form>
   )
 }

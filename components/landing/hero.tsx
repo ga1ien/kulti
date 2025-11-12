@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 
 const scrollToWaitlist = () => {
   const waitlistSection = document.getElementById("waitlist")
@@ -42,6 +43,22 @@ export function Hero() {
         <div className="max-w-3xl mx-auto space-y-4 text-xl md:text-2xl text-[#a1a1aa] animate-fade-in-delay-1">
           <p>This is the first time in history where being curious</p>
           <p className="font-semibold text-white">matters more than being credentialed.</p>
+        </div>
+
+        {/* CTA Buttons */}
+        <div className="flex items-center justify-center gap-4 mt-12 animate-fade-in-delay-2">
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center px-8 py-4 bg-[#27272a] hover:bg-[#3a3a3a] text-white rounded-xl font-bold text-lg transition-all duration-300 border border-[#3a3a3a] hover:border-lime-400/30"
+          >
+            Sign In
+          </Link>
+          <Link
+            href="/signup"
+            className="inline-flex items-center justify-center px-8 py-4 bg-lime-400 hover:bg-lime-500 text-black rounded-xl font-bold text-lg transition-all duration-300 hover:scale-105 shadow-lg shadow-lime-400/20"
+          >
+            Get Started
+          </Link>
         </div>
 
         {/* Scroll indicator */}

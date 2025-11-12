@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 const scrollToWaitlist = () => {
   const waitlistSection = document.getElementById("waitlist")
@@ -12,6 +13,7 @@ const scrollToWaitlist = () => {
 
 export function LandingNav() {
   const [showCursor, setShowCursor] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     const cursorInterval = setInterval(() => {
@@ -33,13 +35,24 @@ export function LandingNav() {
             </span>
           </div>
 
-          {/* CTA Button */}
-          <button
-            onClick={scrollToWaitlist}
-            className="inline-flex items-center justify-center px-5 py-2 bg-lime-400 hover:bg-lime-500 text-black rounded-full font-medium text-sm transition-colors"
-          >
-            Get Early Access
-          </button>
+          {/* CTA Buttons */}
+          <div className="flex items-center gap-3">
+            {/* Get Started - Primary */}
+            <Link
+              href="/signup"
+              className="inline-flex items-center justify-center px-5 py-2 bg-lime-400 hover:bg-lime-500 text-black rounded-full font-medium text-sm transition-colors"
+            >
+              Get Started
+            </Link>
+
+            {/* Sign In - Secondary */}
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center px-5 py-2 bg-[#27272a] hover:bg-[#3a3a3a] text-white rounded-full font-medium text-sm transition-colors"
+            >
+              Sign In
+            </Link>
+          </div>
         </div>
       </div>
     </nav>
