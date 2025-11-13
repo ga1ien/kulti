@@ -1,9 +1,65 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createHmac } from "crypto"
+import { logger } from "@/lib/logger"
+
+/**
+ * Verify 100ms webhook signature
+ * Uses HMAC SHA-256 to verify webhook authenticity
+ */
+function verifyWebhookSignature(
+  body: string,
+  signature: string | null,
+  timestamp: string | null
+): boolean {
+  if (!signature || !timestamp) {
+    return false
+  }
+
+  const secret = process.env.HMS_APP_SECRET
+  if (!secret) {
+    logger.error("HMS_APP_SECRET not configured for webhook verification")
+    return false
+  }
+
+  try {
+    // 100ms webhook signature format: HMAC-SHA256(timestamp.body, secret)
+    const expectedSignature = createHmac("sha256", secret)
+      .update(`${timestamp}.${body}`)
+      .digest("hex")
+
+    // Constant-time comparison to prevent timing attacks
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
+    )
+  } catch (error) {
+    logger.error("Webhook signature verification failed", { error })
+    return false
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    // Verify webhook signature before processing
+    const signature = request.headers.get("x-hms-signature")
+    const timestamp = request.headers.get("x-hms-timestamp")
+
+    // Get raw body for signature verification
+    const rawBody = await request.text()
+
+    if (!verifyWebhookSignature(rawBody, signature, timestamp)) {
+      logger.warn("Invalid webhook signature", {
+        hasSignature: !!signature,
+        hasTimestamp: !!timestamp,
+      })
+      return NextResponse.json(
+        { error: "Invalid webhook signature" },
+        { status: 401 }
+      )
+    }
+
+    const body = JSON.parse(rawBody)
 
     // 100ms webhook events for RTMP ingestion, recordings, and HLS streaming
     // Event types: rtmp.*, recording.*, beam.*, live-stream.*
@@ -38,7 +94,10 @@ export async function POST(request: NextRequest) {
           break
 
         case "rtmp.failed":
-          console.error("OBS stream failed for session:", session.id, data.error)
+          logger.error("OBS stream failed for session", {
+            sessionId: session.id,
+            error: data.error,
+          })
           break
       }
     }
@@ -106,7 +165,11 @@ export async function POST(request: NextRequest) {
             })
             .eq("hms_recording_id", recordingId)
 
-          console.error("Recording failed for session:", session.id, data.error)
+          logger.error("Recording failed for session", {
+            sessionId: session.id,
+            recordingId,
+            error: data.error,
+          })
           break
       }
     }
@@ -169,14 +232,18 @@ export async function POST(request: NextRequest) {
 
         case "live-stream.failed":
         case "beam.failed":
-          console.error("HLS stream failed for session:", session.id, data.error)
+          logger.error("HLS stream failed for session", {
+            sessionId: session.id,
+            streamId,
+            error: data.error,
+          })
           break
       }
     }
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error("Webhook processing error:", error)
+    logger.error("Webhook processing error", { error })
     return NextResponse.json(
       { error: "Failed to process webhook" },
       { status: 500 }
