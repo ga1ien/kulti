@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { PhoneInput } from './phone-input'
 import { OTPInput } from './otp-input'
 import { sendPhoneOTP, verifyPhoneOTP, completePhoneSignup } from '@/lib/auth/phone-auth'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 
 // Step 1: Invite Code
 const step1Schema = z.object({
@@ -38,7 +38,11 @@ const step4Schema = z.object({
 type Step1Data = z.infer<typeof step1Schema>
 type Step4Data = z.infer<typeof step4Schema>
 
-export function PhoneSignupForm() {
+interface PhoneSignupFormProps {
+  initialInviteCode?: string
+}
+
+export function PhoneSignupForm({ initialInviteCode }: PhoneSignupFormProps = {}) {
   const router = useRouter()
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [error, setError] = useState<string | null>(null)
@@ -54,6 +58,12 @@ export function PhoneSignupForm() {
   const [resendCooldown, setResendCooldown] = useState(0)
   // OTP expiration timer (60 seconds from Supabase)
   const [otpExpiration, setOtpExpiration] = useState(0)
+  // Password visibility toggle
+  const [showPassword, setShowPassword] = useState(false)
+
+  // Refs for interval cleanup
+  const cooldownIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const expirationIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Step 1 form
   const step1Form = useForm<Step1Data>({
@@ -64,6 +74,83 @@ export function PhoneSignupForm() {
   const step4Form = useForm<Step4Data>({
     resolver: zodResolver(step4Schema),
   })
+
+  // Cleanup intervals on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownIntervalRef.current) {
+        clearInterval(cooldownIntervalRef.current)
+        cooldownIntervalRef.current = null
+      }
+      if (expirationIntervalRef.current) {
+        clearInterval(expirationIntervalRef.current)
+        expirationIntervalRef.current = null
+      }
+    }
+  }, [])
+
+  // Auto-populate invite code from URL parameter
+  useEffect(() => {
+    if (initialInviteCode) {
+      step1Form.setValue('inviteCode', initialInviteCode.toUpperCase())
+    }
+  }, [initialInviteCode, step1Form])
+
+  // Helper function to clear existing intervals
+  const clearTimers = () => {
+    if (cooldownIntervalRef.current) {
+      clearInterval(cooldownIntervalRef.current)
+      cooldownIntervalRef.current = null
+    }
+    if (expirationIntervalRef.current) {
+      clearInterval(expirationIntervalRef.current)
+      expirationIntervalRef.current = null
+    }
+  }
+
+  // Helper function to start cooldown timer
+  const startCooldownTimer = () => {
+    // Clear any existing cooldown timer
+    if (cooldownIntervalRef.current) {
+      clearInterval(cooldownIntervalRef.current)
+    }
+
+    setResendCooldown(60)
+    cooldownIntervalRef.current = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          if (cooldownIntervalRef.current) {
+            clearInterval(cooldownIntervalRef.current)
+            cooldownIntervalRef.current = null
+          }
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  // Helper function to start expiration timer
+  const startExpirationTimer = () => {
+    // Clear any existing expiration timer
+    if (expirationIntervalRef.current) {
+      clearInterval(expirationIntervalRef.current)
+    }
+
+    setOtpExpiration(60)
+    expirationIntervalRef.current = setInterval(() => {
+      setOtpExpiration((prev) => {
+        if (prev <= 1) {
+          if (expirationIntervalRef.current) {
+            clearInterval(expirationIntervalRef.current)
+            expirationIntervalRef.current = null
+          }
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
 
   // Step 1: Validate invite code
   const handleStep1Submit = async (data: Step1Data) => {
@@ -109,29 +196,9 @@ export function PhoneSignupForm() {
         throw new Error(result.error || 'Failed to send verification code')
       }
 
-      // Start cooldown timer
-      setResendCooldown(60)
-      const cooldownInterval = setInterval(() => {
-        setResendCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(cooldownInterval)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-
-      // Start OTP expiration timer (60 seconds)
-      setOtpExpiration(60)
-      const expirationInterval = setInterval(() => {
-        setOtpExpiration((prev) => {
-          if (prev <= 1) {
-            clearInterval(expirationInterval)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
+      // Start timers using helper functions
+      startCooldownTimer()
+      startExpirationTimer()
 
       setStep(3)
     } catch (err) {
@@ -190,11 +257,13 @@ export function PhoneSignupForm() {
         throw new Error(result.error || 'Failed to complete signup')
       }
 
-      router.push('/dashboard')
-      router.refresh()
+      // Defer redirect to after React finishes current render cycle
+      // This prevents "Rendered more hooks" error
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 0)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete signup')
-    } finally {
       setLoading(false)
     }
   }
@@ -213,29 +282,9 @@ export function PhoneSignupForm() {
         throw new Error(result.error || 'Failed to resend verification code')
       }
 
-      // Start cooldown timer
-      setResendCooldown(60)
-      const cooldownInterval = setInterval(() => {
-        setResendCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(cooldownInterval)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-
-      // Start OTP expiration timer (60 seconds)
-      setOtpExpiration(60)
-      const expirationInterval = setInterval(() => {
-        setOtpExpiration((prev) => {
-          if (prev <= 1) {
-            clearInterval(expirationInterval)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
+      // Start timers using helper functions
+      startCooldownTimer()
+      startExpirationTimer()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to resend code')
     }
@@ -269,14 +318,14 @@ export function PhoneSignupForm() {
 
       {/* Step 1: Invite Code */}
       {step === 1 && (
-        <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="space-y-6">
+        <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="space-y-4 md:space-y-6">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">Enter Invite Code</h2>
             <p className="text-[#a1a1aa]">You need an invite code to join Kulti</p>
           </div>
 
           <div>
-            <label htmlFor="inviteCode" className="block text-lg font-medium mb-3 text-white">
+            <label htmlFor="inviteCode" className="block text-base md:text-lg font-medium mb-3 text-white">
               Invite Code
             </label>
             <Input
@@ -296,7 +345,7 @@ export function PhoneSignupForm() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-xl px-12 py-6 h-auto rounded-xl"
+            className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-lg md:text-xl px-6 md:px-12 py-4 md:py-6 h-auto rounded-xl"
           >
             {loading ? (
               <>
@@ -313,31 +362,15 @@ export function PhoneSignupForm() {
 
       {/* Step 2: Phone Number */}
       {step === 2 && (
-        <div className="space-y-6">
-          <button
-            onClick={() => setStep(1)}
-            className="flex items-center text-sm text-[#71717a] hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Back
-          </button>
-
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Enter Phone Number</h2>
-            <p className="text-[#a1a1aa]">We'll send you a verification code</p>
-          </div>
-
+        <div className="space-y-4 md:space-y-6">
           <div>
-            <label htmlFor="phone" className="block text-lg font-medium mb-3 text-white">
-              Phone Number
-            </label>
             <PhoneInput value={phone} onChange={setPhone} disabled={loading} />
           </div>
 
           <Button
             onClick={handleSendOTP}
             disabled={loading || !phone}
-            className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-xl px-12 py-6 h-auto rounded-xl"
+            className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-lg md:text-xl px-6 md:px-12 py-4 md:py-6 h-auto rounded-xl"
           >
             {loading ? (
               <>
@@ -353,15 +386,7 @@ export function PhoneSignupForm() {
 
       {/* Step 3: OTP Verification */}
       {step === 3 && (
-        <div className="space-y-6">
-          <button
-            onClick={() => setStep(2)}
-            className="flex items-center text-sm text-[#71717a] hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Back
-          </button>
-
+        <div className="space-y-4 md:space-y-6">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">Enter Verification Code</h2>
             <p className="text-[#a1a1aa]">
@@ -379,7 +404,7 @@ export function PhoneSignupForm() {
             )}
           </div>
 
-          <div className="py-6">
+          <div className="py-4 md:py-6">
             <OTPInput
               value={otp}
               onChange={setOtp}
@@ -392,7 +417,7 @@ export function PhoneSignupForm() {
           <Button
             onClick={handleVerifyOTP}
             disabled={loading || otp.length !== 6}
-            className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-xl px-12 py-6 h-auto rounded-xl"
+            className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-lg md:text-xl px-6 md:px-12 py-4 md:py-6 h-auto rounded-xl"
           >
             {loading ? (
               <>
@@ -408,7 +433,7 @@ export function PhoneSignupForm() {
             <button
               onClick={handleResendOTP}
               disabled={resendCooldown > 0}
-              className="text-sm text-lime-400 hover:text-lime-300 disabled:text-[#71717a] disabled:cursor-not-allowed transition-colors"
+              className="text-sm text-lime-400 hover:text-lime-300 disabled:text-[#71717a] disabled:cursor-not-allowed transition-colors px-4 py-2"
             >
               {resendCooldown > 0
                 ? `Resend code in 0:${resendCooldown.toString().padStart(2, '0')}`
@@ -420,14 +445,14 @@ export function PhoneSignupForm() {
 
       {/* Step 4: Profile Completion */}
       {step === 4 && (
-        <form onSubmit={step4Form.handleSubmit(handleCompleteProfile)} className="space-y-6">
+        <form onSubmit={step4Form.handleSubmit(handleCompleteProfile)} className="space-y-4 md:space-y-6">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">Complete Your Profile</h2>
             <p className="text-[#a1a1aa]">Just a few more details</p>
           </div>
 
           <div>
-            <label htmlFor="username" className="block text-lg font-medium mb-3 text-white">
+            <label htmlFor="username" className="block text-base md:text-lg font-medium mb-3 text-white">
               Username <span className="text-red-500">*</span>
             </label>
             <Input
@@ -445,7 +470,7 @@ export function PhoneSignupForm() {
           </div>
 
           <div>
-            <label htmlFor="displayName" className="block text-lg font-medium mb-3 text-white">
+            <label htmlFor="displayName" className="block text-base md:text-lg font-medium mb-3 text-white">
               Display Name <span className="text-red-500">*</span>
             </label>
             <Input
@@ -463,7 +488,7 @@ export function PhoneSignupForm() {
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-lg font-medium mb-3 text-white">
+            <label htmlFor="email" className="block text-base md:text-lg font-medium mb-3 text-white">
               Email <span className="text-red-500">*</span>
             </label>
             <Input
@@ -474,7 +499,7 @@ export function PhoneSignupForm() {
               className="h-14 text-lg"
               disabled={loading}
             />
-            <p className="mt-2 text-xs text-[#71717a]">
+            <p className="mt-2 text-xs sm:text-sm text-[#71717a]">
               Used for account recovery and notifications
             </p>
             {step4Form.formState.errors.email && (
@@ -485,18 +510,33 @@ export function PhoneSignupForm() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-lg font-medium mb-3 text-white">
+            <label htmlFor="password" className="block text-base md:text-lg font-medium mb-3 text-white">
               Password <span className="text-red-500">*</span>
             </label>
-            <Input
-              id="password"
-              type="password"
-              {...step4Form.register('password')}
-              placeholder="••••••••"
-              className="h-14 text-lg"
-              disabled={loading}
-            />
-            <p className="mt-2 text-xs text-[#71717a]">
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                {...step4Form.register('password')}
+                placeholder="••••••••"
+                className="h-14 text-lg pr-12"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-0 top-0 h-14 px-4 flex items-center justify-center text-[#71717a] hover:text-white transition-colors disabled:opacity-50"
+                disabled={loading}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <p className="mt-2 text-xs sm:text-sm text-[#71717a]">
               Used to login with email instead of phone
             </p>
             {step4Form.formState.errors.password && (
@@ -509,7 +549,7 @@ export function PhoneSignupForm() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-xl px-12 py-6 h-auto rounded-xl"
+            className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-lg md:text-xl px-6 md:px-12 py-4 md:py-6 h-auto rounded-xl"
           >
             {loading ? (
               <>
