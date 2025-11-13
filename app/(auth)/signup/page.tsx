@@ -20,7 +20,9 @@ export async function generateMetadata({
       .eq('code', invite)
       .single()
 
-    const inviterName = data?.creator?.display_name || 'Someone'
+    // Type assertion: Supabase returns array for relationships, but we know it's single
+    const creator = Array.isArray(data?.creator) ? data.creator[0] : data?.creator
+    const inviterName = creator?.display_name || 'Someone'
 
     return {
       title: `${inviterName} wants you on Kulti!`,

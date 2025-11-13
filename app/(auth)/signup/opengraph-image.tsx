@@ -26,8 +26,10 @@ export default async function Image({ searchParams }: { searchParams: Promise<{ 
         .eq('code', invite)
         .single()
 
-      if (data?.creator?.display_name) {
-        inviterName = data.creator.display_name
+      // Type assertion: Supabase returns array for relationships, but we know it's single
+      const creator = Array.isArray(data?.creator) ? data.creator[0] : data?.creator
+      if (creator?.display_name) {
+        inviterName = creator.display_name
       }
     } catch (error) {
       console.error('Failed to fetch inviter name:', error)
