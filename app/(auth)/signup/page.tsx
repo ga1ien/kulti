@@ -16,11 +16,11 @@ export async function generateMetadata({
     const supabase = await createClient()
     const { data } = await supabase
       .from('invites')
-      .select('profiles!created_by(display_name)')
+      .select('creator:profiles!created_by(display_name)')
       .eq('code', invite)
       .single()
 
-    const inviterName = data?.profiles?.display_name || 'Someone'
+    const inviterName = data?.creator?.display_name || 'Someone'
 
     return {
       title: `${inviterName} wants you on Kulti!`,

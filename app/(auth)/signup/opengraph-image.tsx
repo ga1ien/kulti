@@ -22,12 +22,12 @@ export default async function Image({ searchParams }: { searchParams: Promise<{ 
       const supabase = await createClient()
       const { data } = await supabase
         .from('invites')
-        .select('profiles!created_by(display_name)')
+        .select('creator:profiles!created_by(display_name)')
         .eq('code', invite)
         .single()
 
-      if (data?.profiles?.display_name) {
-        inviterName = data.profiles.display_name
+      if (data?.creator?.display_name) {
+        inviterName = data.creator.display_name
       }
     } catch (error) {
       console.error('Failed to fetch inviter name:', error)
