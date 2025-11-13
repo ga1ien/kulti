@@ -3,6 +3,8 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { LoadingScreen } from "@/components/loading-screen";
 import { ToastProvider } from "@/components/providers/toast-provider";
+import { OnboardingProvider } from "@/contexts/onboarding-context";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const jetbrainsMono = JetBrains_Mono({
@@ -56,7 +58,11 @@ export default function RootLayout({
       <body className="font-sans">
         <LoadingScreen />
         <ToastProvider />
-        {children}
+        <ErrorBoundary>
+          <OnboardingProvider>
+            {children}
+          </OnboardingProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

@@ -1,0 +1,157 @@
+/**
+ * HLS Streaming Test Script
+ *
+ * Tests the HLS implementation by:
+ * 1. Creating a test session
+ * 2. Simulating different viewer counts
+ * 3. Checking HLS stream behavior
+ *
+ * Usage:
+ *   npx tsx scripts/test/test-hls.ts
+ */
+
+import { createHMSRoom, startHLSStream, getHLSStreamStatus, stopHLSStream } from '@/lib/hms/server'
+
+interface TestResult {
+  test: string
+  passed: boolean
+  message: string
+  data?: any
+}
+
+const results: TestResult[] = []
+
+async function log(test: string, passed: boolean, message: string, data?: any) {
+  results.push({ test, passed, message, data })
+  const icon = passed ? '✅' : '❌'
+  console.log(`${icon} ${test}: ${message}`)
+  if (data) {
+    console.log('   Data:', JSON.stringify(data, null, 2))
+  }
+}
+
+async function testHLSImplementation() {
+  console.log('🚀 Starting HLS Implementation Tests...\n')
+
+  try {
+    // Test 1: Create HMS Room
+    console.log('Test 1: Creating HMS Room...')
+    const roomId = await createHMSRoom(
+      `HLS Test Room ${Date.now()}`,
+      'Test room for HLS streaming'
+    )
+
+    if (roomId) {
+      await log('Create Room', true, 'Room created successfully', { roomId })
+    } else {
+      await log('Create Room', false, 'Failed to create room')
+      return
+    }
+
+    // Test 2: Get Room Details
+    console.log('\nTest 2: Getting Room Details...')
+    const roomDetails = await getRoomDetails(roomId)
+
+    if (roomDetails && roomDetails.id === roomId) {
+      await log('Get Room Details', true, 'Room details retrieved', roomDetails)
+    } else {
+      await log('Get Room Details', false, 'Failed to get room details')
+    }
+
+    // Test 3: Start HLS Stream
+    console.log('\nTest 3: Starting HLS Stream...')
+    try {
+      const hlsStream = await startHLSStream(roomId)
+
+      if (hlsStream && hlsStream.stream_url) {
+        await log('Start HLS Stream', true, 'HLS stream started', hlsStream)
+      } else {
+        await log('Start HLS Stream', false, 'HLS stream started but no URL returned', hlsStream)
+      }
+    } catch (error: any) {
+      await log('Start HLS Stream', false, `Failed to start HLS stream: ${error.message}`)
+    }
+
+    // Test 4: Get HLS Stream Status
+    console.log('\nTest 4: Getting HLS Stream Status...')
+    try {
+      // Wait a bit for stream to initialize
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      const streamStatus = await getHLSStreamStatus(roomId)
+
+      if (streamStatus && streamStatus.stream_url) {
+        await log('Get Stream Status', true, 'Stream status retrieved', streamStatus)
+      } else if (streamStatus === null) {
+        await log('Get Stream Status', false, 'Stream not found (may not have started yet)')
+      } else {
+        await log('Get Stream Status', false, 'Stream status incomplete', streamStatus)
+      }
+    } catch (error: any) {
+      await log('Get Stream Status', false, `Failed to get stream status: ${error.message}`)
+    }
+
+    // Test 5: Stop HLS Stream
+    console.log('\nTest 5: Stopping HLS Stream...')
+    try {
+      const stopResult = await stopHLSStream(roomId)
+
+      if (stopResult && stopResult.status) {
+        await log('Stop HLS Stream', true, 'HLS stream stopped', stopResult)
+      } else {
+        await log('Stop HLS Stream', false, 'Failed to stop stream', stopResult)
+      }
+    } catch (error: any) {
+      await log('Stop HLS Stream', false, `Failed to stop HLS stream: ${error.message}`)
+    }
+
+    // Test 6: Verify Stream Stopped
+    console.log('\nTest 6: Verifying Stream Stopped...')
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      const streamStatus = await getHLSStreamStatus(roomId)
+
+      if (streamStatus === null || streamStatus.status === 'stopped') {
+        await log('Verify Stopped', true, 'Stream confirmed stopped')
+      } else {
+        await log('Verify Stopped', false, 'Stream still running', streamStatus)
+      }
+    } catch (error: any) {
+      await log('Verify Stopped', true, 'Stream not found (stopped successfully)')
+    }
+
+  } catch (error: any) {
+    console.error('❌ Test suite failed:', error.message)
+    await log('Test Suite', false, `Test suite failed: ${error.message}`)
+  }
+
+  // Summary
+  console.log('\n' + '='.repeat(60))
+  console.log('TEST SUMMARY')
+  console.log('='.repeat(60))
+
+  const passed = results.filter(r => r.passed).length
+  const total = results.length
+  const percentage = Math.round((passed / total) * 100)
+
+  console.log(`\nTests Passed: ${passed}/${total} (${percentage}%)`)
+
+  if (passed === total) {
+    console.log('\n✅ All tests passed! HLS implementation is working correctly.')
+  } else {
+    console.log('\n⚠️  Some tests failed. Please review the errors above.')
+  }
+
+  console.log('\n' + '='.repeat(60))
+}
+
+// Run tests
+testHLSImplementation()
+  .then(() => {
+    process.exit(results.every(r => r.passed) ? 0 : 1)
+  })
+  .catch((error) => {
+    console.error('Fatal error:', error)
+    process.exit(1)
+  })

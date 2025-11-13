@@ -195,7 +195,7 @@ export function SessionEndModal({ isOpen, onClose, sessionId }: SessionEndModalP
               {/* Actions */}
               <div className="flex gap-3 pt-4">
                 <Link
-                  href="/dashboard/credits"
+                  href="/credits"
                   className="flex-1 px-6 py-3 bg-lime-400 hover:bg-lime-500 text-black font-bold rounded-lg transition-colors text-center"
                 >
                   View Credits

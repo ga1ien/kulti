@@ -36,21 +36,21 @@ export function LandingNav() {
           </div>
 
           {/* CTA Buttons */}
-          <div className="flex items-center gap-3">
-            {/* Get Started - Primary */}
-            <Link
-              href="/signup"
-              className="inline-flex items-center justify-center px-5 py-2 bg-lime-400 hover:bg-lime-500 text-black rounded-full font-medium text-sm transition-colors"
-            >
-              Get Started
-            </Link>
-
+          <div className="flex items-center gap-2 md:gap-3">
             {/* Sign In - Secondary */}
             <Link
               href="/login"
-              className="inline-flex items-center justify-center px-5 py-2 bg-[#27272a] hover:bg-[#3a3a3a] text-white rounded-full font-medium text-sm transition-colors"
+              className="inline-flex items-center justify-center px-4 py-2 md:px-6 md:py-3 bg-[#27272a] hover:bg-[#3a3a3a] text-white rounded-full font-medium text-xs sm:text-sm transition-colors whitespace-nowrap"
             >
               Sign In
+            </Link>
+
+            {/* Get Started - Primary */}
+            <Link
+              href="/signup"
+              className="inline-flex items-center justify-center px-4 py-2 md:px-6 md:py-3 bg-lime-400 hover:bg-lime-500 text-black rounded-full font-medium text-xs sm:text-sm transition-colors whitespace-nowrap"
+            >
+              Get Started
             </Link>
           </div>
         </div>

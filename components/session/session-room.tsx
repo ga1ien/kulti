@@ -8,32 +8,24 @@ import {
   useHMSActions,
   useHMSStore,
   selectIsConnectedToRoom,
-  useHMSNotifications,
-  HMSNotificationTypes,
   useAutoplayError,
   selectRoomState,
   HMSRoomState,
   selectPeerCount,
   selectPeers,
 } from "@100mslive/react-sdk"
+import { HMSVirtualBackgroundPlugin } from "@100mslive/hms-virtual-background"
 import { Session, Profile } from "@/types/database"
-import { VideoGrid } from "./video-grid"
-import { Controls } from "./controls"
-import { ChatSidebar as ChatSidebarEnhanced } from "./chat-sidebar-enhanced"
-import { OBSPanel } from "./obs-panel"
-import { SessionEndModal } from "./session-end-modal"
-import { TipModal } from "./tip-modal"
-import { AIChatSidebar } from "./ai-chat-sidebar"
-import { AIModuleControl } from "./ai-module-control"
-import { AISettingsModal } from "./ai-settings-modal"
-import { PresenterInviteModal } from "./presenter-invite-modal"
-import { StatsPanel } from "./stats-panel"
-import { HLSViewer } from "./hls-viewer"
+import dynamic from "next/dynamic"
+import { LoadingSkeleton, VideoGridSkeleton, ChatSkeleton } from "@/components/ui/loading-skeleton"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, TrendingUp, Heart, MessageSquare, Bot, UserPlus } from "lucide-react"
 import { getAIPermissions, updateAIModule, type AIPermissions } from "@/lib/session"
 import { createClient } from "@/lib/supabase/client"
 import { useTokenRefresh } from "@/hooks/use-token-refresh"
+import { useCreditBalance } from "@/lib/hooks/use-credit-balance"
+import { useHMSNotificationHandler } from "@/lib/hooks/use-hms-notifications"
+import { getHMSToken, sendHeartbeat } from "@/lib/utils/api"
 import {
   initializeSessionStore,
   updateWatchDuration,
@@ -44,6 +36,69 @@ import {
   countActiveViewers,
   getAllWatchDurations,
 } from "@/lib/hms/session-store"
+
+// Code split video components
+const VideoGrid = dynamic(() => import("./video-grid").then(mod => ({ default: mod.VideoGrid })), {
+  loading: () => <VideoGridSkeleton />,
+  ssr: false
+})
+
+const Controls = dynamic(() => import("./controls").then(mod => ({ default: mod.Controls })), {
+  loading: () => (
+    <div className="flex items-center justify-center gap-4 p-4">
+      <LoadingSkeleton className="w-12 h-12 rounded-full" />
+      <LoadingSkeleton className="w-12 h-12 rounded-full" />
+      <LoadingSkeleton className="w-12 h-12 rounded-full" />
+      <LoadingSkeleton className="w-12 h-12 rounded-full" />
+    </div>
+  ),
+  ssr: false
+})
+
+// Code split chat/AI sidebars
+const ChatSidebarEnhanced = dynamic(() => import("./chat-sidebar-enhanced").then(mod => ({ default: mod.ChatSidebar })), {
+  loading: () => <ChatSkeleton />,
+  ssr: false
+})
+
+const AIChatSidebar = dynamic(() => import("./ai-chat-sidebar").then(mod => ({ default: mod.AIChatSidebar })), {
+  loading: () => <ChatSkeleton />,
+  ssr: false
+})
+
+const AIModuleControl = dynamic(() => import("./ai-module-control").then(mod => ({ default: mod.AIModuleControl })), {
+  ssr: false
+})
+
+const StatsPanel = dynamic(() => import("./stats-panel").then(mod => ({ default: mod.StatsPanel })), {
+  ssr: false
+})
+
+const OBSPanel = dynamic(() => import("./obs-panel").then(mod => ({ default: mod.OBSPanel })), {
+  loading: () => <LoadingSkeleton className="w-full h-24" />,
+  ssr: false
+})
+
+// Code split modals - only load when needed
+const SessionEndModal = dynamic(() => import("./session-end-modal").then(mod => ({ default: mod.SessionEndModal })), {
+  ssr: false
+})
+
+const TipModal = dynamic(() => import("./tip-modal").then(mod => ({ default: mod.TipModal })), {
+  ssr: false
+})
+
+const AISettingsModal = dynamic(() => import("./ai-settings-modal").then(mod => ({ default: mod.AISettingsModal })), {
+  ssr: false
+})
+
+const PresenterInviteModal = dynamic(() => import("./presenter-invite-modal").then(mod => ({ default: mod.PresenterInviteModal })), {
+  ssr: false
+})
+
+const HLSViewer = dynamic(() => import("./hls-viewer").then(mod => ({ default: mod.HLSViewer })), {
+  ssr: false
+})
 
 interface SessionRoomProps {
   session: Session & { host: Profile }
@@ -71,22 +126,20 @@ function SessionRoomContent({
   const [isJoining, setIsJoining] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // HMS Session Store - Real-time ephemeral state (no database polling!)
+  // HMS Session Store - Real-time ephemeral state
   const watchDurationData = useHMSStore(selectWatchDuration(userId))
-  const viewerCountData = useHMSStore(selectViewerCount)
   const watchDuration = watchDurationData?.durationSeconds || 0
 
-  // Calculate estimated credits locally (same formula as server)
+  // Calculate estimated credits locally
   const isHost = session.host_id === userId
   const estimatedCredits = isHost
-    ? Math.floor((watchDuration / 60) * 5) // Host: ~5 credits/min
-    : Math.floor((watchDuration / 60) * 1) // Viewer: ~1 credit/min
+    ? Math.floor((watchDuration / 60) * 5)
+    : Math.floor((watchDuration / 60) * 1)
 
   const [previousCredits, setPreviousCredits] = useState(0)
   const [showEndModal, setShowEndModal] = useState(false)
   const [showCreditsAnimation, setShowCreditsAnimation] = useState(false)
   const [showTipModal, setShowTipModal] = useState(false)
-  const [currentBalance, setCurrentBalance] = useState(0)
   const [activeTab, setActiveTab] = useState<"chat" | "ai">("chat")
   const [aiPermissions, setAIPermissions] = useState<AIPermissions | null>(null)
   const [showAISettings, setShowAISettings] = useState(false)
@@ -94,6 +147,14 @@ function SessionRoomContent({
   const [tokenExpiresAt, setTokenExpiresAt] = useState<number | null>(null)
   const [authToken, setAuthToken] = useState<string | null>(null)
   const [useHLS, setUseHLS] = useState(false)
+  const [hlsStreamUrl, setHLSStreamUrl] = useState<string | null>(null)
+  const [virtualBgPlugin, setVirtualBgPlugin] = useState<HMSVirtualBackgroundPlugin | null>(null)
+  const [noiseCancellationActive, setNoiseCancellationActive] = useState(false)
+
+  // Use shared hooks
+  const { balance: currentBalance, refreshBalance } = useCreditBalance()
+  useHMSNotificationHandler()
+  const autoplayError = useAutoplayError()
 
   // Token refresh hook
   const { showExpiryWarning } = useTokenRefresh({
@@ -107,118 +168,13 @@ function SessionRoomContent({
       setTokenExpiresAt(expiresAt)
     },
   })
-  const [hlsStreamUrl, setHLSStreamUrl] = useState<string | null>(null)
+
   const supabase = createClient()
 
-  // Track local watch duration (client-side timer)
+  // Track local watch duration
   const watchStartTimeRef = useRef<number>(Date.now())
   const localWatchDuration = useRef<number>(0)
   const isActiveRef = useRef<boolean>(true)
-
-  // Comprehensive notification handler for HMS events
-  const notification = useHMSNotifications()
-  const autoplayError = useAutoplayError()
-
-  // Handle all HMS notifications
-  useEffect(() => {
-    if (!notification) return
-
-    switch (notification.type) {
-      case HMSNotificationTypes.PEER_JOINED:
-        toast.success(`${notification.data?.name || 'Someone'} joined the session`, {
-          duration: 2000,
-          icon: '👋',
-        })
-        break
-
-      case HMSNotificationTypes.PEER_LEFT:
-        toast(`${notification.data?.name || 'Someone'} left the session`, {
-          duration: 2000,
-          icon: '👋',
-        })
-        break
-
-      case HMSNotificationTypes.ERROR:
-        const error = notification.data
-        console.error('HMS Error:', error)
-
-        // Provide user-friendly error messages
-        if (error.code === 3001) {
-          toast.error('Failed to join: Invalid room code')
-        } else if (error.code === 3003) {
-          toast.error('Network connection failed')
-        } else if (error.code === 3008) {
-          toast.error('Camera/microphone access denied')
-        } else if (error.code === 1003) {
-          toast.error('Session has ended')
-        } else {
-          toast.error(error.message || 'An error occurred')
-        }
-        break
-
-      case HMSNotificationTypes.RECONNECTING:
-        toast('Reconnecting...', {
-          duration: Infinity,
-          id: 'reconnecting',
-          icon: '🔄',
-        })
-        break
-
-      case HMSNotificationTypes.RECONNECTED:
-        toast.dismiss('reconnecting')
-        toast.success('Reconnected successfully!', {
-          duration: 3000,
-          icon: '✅',
-        })
-        break
-
-      case HMSNotificationTypes.TRACK_ADDED:
-        console.log('Track added:', notification.data)
-        break
-
-      case HMSNotificationTypes.TRACK_REMOVED:
-        console.log('Track removed:', notification.data)
-        break
-
-      case HMSNotificationTypes.TRACK_MUTED:
-        const mutedPeer = notification.data?.peer
-        if (!mutedPeer?.isLocal) {
-          toast(`${mutedPeer?.name}'s ${notification.data?.track?.type} was muted`, {
-            duration: 2000,
-          })
-        }
-        break
-
-      case HMSNotificationTypes.TRACK_UNMUTED:
-        const unmutedPeer = notification.data?.peer
-        if (!unmutedPeer?.isLocal) {
-          toast(`${unmutedPeer?.name}'s ${notification.data?.track?.type} was unmuted`, {
-            duration: 2000,
-          })
-        }
-        break
-
-      case HMSNotificationTypes.ROLE_CHANGE_REQUESTED:
-        const roleRequest = notification.data
-        toast(`Role change requested: ${roleRequest?.role?.name}`, {
-          duration: 5000,
-        })
-        break
-
-      case HMSNotificationTypes.DEVICE_CHANGE_UPDATE:
-        toast('Camera or microphone changed', {
-          duration: 2000,
-          icon: '🎥',
-        })
-        break
-
-      default:
-        // Log other notifications for debugging
-        if (notification.type !== HMSNotificationTypes.NEW_MESSAGE) {
-          console.log('HMS Notification:', notification.type, notification.data)
-        }
-    }
-  }, [notification])
 
   // Handle browser autoplay errors
   useEffect(() => {
@@ -240,37 +196,30 @@ function SessionRoomContent({
         setIsJoining(true)
         setError(null)
 
-        // Get HMS auth token
-        const response = await fetch("/api/hms/get-token", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            roomId: session.hms_room_id,
-            sessionId: session.id,
-          }),
-        })
-
-        const data = await response.json()
+        // Get HMS auth token using shared utility
+        if (!session.hms_room_id) {
+          throw new Error("Session room ID is missing")
+        }
+        const response = await getHMSToken(session.hms_room_id, session.id)
 
         if (!response.ok) {
-          throw new Error(data.error || "Failed to join session")
+          throw new Error(response.error || "Failed to join session")
         }
+
+        const data = response.data!
 
         // Check if user should use HLS
         if (data.useHLS && data.hlsStreamUrl) {
           setUseHLS(true)
           setHLSStreamUrl(data.hlsStreamUrl)
-          // Don't join WebRTC for HLS viewers
           setIsJoining(false)
           return
         }
 
-
         // Store token and expiry time for refresh
         setAuthToken(data.token)
         setTokenExpiresAt(data.expiresAt)
+
         // Join HMS room (WebRTC)
         await hmsActions.join({
           userName: data.userName,
@@ -318,7 +267,6 @@ function SessionRoomContent({
           }
         } catch (streakError) {
           console.error("Failed to update streak:", streakError)
-          // Don't block session join if streak update fails
         }
 
         // Start watch time tracking
@@ -336,23 +284,20 @@ function SessionRoomContent({
     joinRoom()
 
     return () => {
-      // Mark as inactive and leave
       if (isConnected) {
         markUserInactive(hmsActions, userId, localWatchDuration.current)
       }
       hmsActions.leave()
     }
-  }, [hmsActions, session.hms_room_id, session.id, userId])
+  }, [hmsActions, session.hms_room_id, session.id, userId, isConnected])
 
   // Update viewer count when peers change
   useEffect(() => {
     if (!isConnected) return
 
-    // Calculate active viewers (exclude host if needed)
     const allWatchData = getAllWatchDurations(useHMSStore as any)
     const activeCount = countActiveViewers(allWatchData)
 
-    // Update viewer count in session store
     updateViewerCount(hmsActions, peerCount, activeCount)
   }, [isConnected, peerCount, peers, hmsActions])
 
@@ -362,20 +307,16 @@ function SessionRoomContent({
 
     let heartbeatInterval: NodeJS.Timeout | null = null
 
-    // Update watch duration in HMS Session Store
-    const sendHeartbeat = () => {
-      // Calculate duration since last update
+    const sendSessionHeartbeat = () => {
       const now = Date.now()
       const elapsedSeconds = Math.floor((now - watchStartTimeRef.current) / 1000)
 
-      // Only count time when tab is active
       if (isActiveRef.current) {
         localWatchDuration.current += elapsedSeconds
       }
 
       watchStartTimeRef.current = now
 
-      // Update HMS Session Store (synced to all peers in <100ms!)
       updateWatchDuration(
         hmsActions,
         userId,
@@ -383,51 +324,33 @@ function SessionRoomContent({
         isActiveRef.current
       )
 
-      // Also update database for persistence (still needed for credit calculation)
-      fetch('/api/analytics/heartbeat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sessionId: session.id,
-          isActive: isActiveRef.current,
-        }),
-      }).catch(console.error)
+      // Use shared utility for heartbeat
+      sendHeartbeat(session.id, isActiveRef.current)
     }
 
-    // Send initial heartbeat
-    sendHeartbeat()
+    sendSessionHeartbeat()
+    heartbeatInterval = setInterval(sendSessionHeartbeat, 30000)
 
-    // Set up interval - every 30 seconds
-    heartbeatInterval = setInterval(sendHeartbeat, 30000)
-
-    // Handle visibility change (tab switching)
     const handleVisibilityChange = () => {
       const wasActive = isActiveRef.current
       isActiveRef.current = !document.hidden
 
-      // If transitioning from active to inactive, update immediately
       if (wasActive && !isActiveRef.current) {
-        sendHeartbeat()
+        sendSessionHeartbeat()
       } else if (!wasActive && isActiveRef.current) {
-        // If transitioning from inactive to active, reset timer
         watchStartTimeRef.current = Date.now()
-        sendHeartbeat()
+        sendSessionHeartbeat()
       }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
-    // Cleanup
     return () => {
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval)
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange)
-
-      // Final heartbeat on unmount
-      sendHeartbeat()
+      sendSessionHeartbeat()
     }
   }, [isConnected, session.id, userId, hmsActions])
 
@@ -438,23 +361,7 @@ function SessionRoomContent({
       setTimeout(() => setShowCreditsAnimation(false), 1000)
     }
     setPreviousCredits(estimatedCredits)
-  }, [estimatedCredits])
-
-  // Fetch current balance for tipping
-  useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        const response = await fetch('/api/credits/balance')
-        if (response.ok) {
-          const data = await response.json()
-          setCurrentBalance(data.credits_balance || 0)
-        }
-      } catch (error) {
-        console.error('Failed to fetch balance:', error)
-      }
-    }
-    fetchBalance()
-  }, [])
+  }, [estimatedCredits, previousCredits])
 
   // Fetch AI permissions and subscribe to updates
   useEffect(() => {
@@ -467,7 +374,6 @@ function SessionRoomContent({
 
     fetchPermissions()
 
-    // Subscribe to session changes (AI module updates)
     const channel = supabase
       .channel(`session:${session.id}:ai`)
       .on(
@@ -491,7 +397,6 @@ function SessionRoomContent({
 
   const handleLeave = () => {
     hmsActions.leave()
-    // Show session end modal if user earned credits
     if (estimatedCredits > 0) {
       setShowEndModal(true)
     } else {
@@ -505,16 +410,7 @@ function SessionRoomContent({
   }
 
   const handleTipSuccess = async () => {
-    // Refresh balance after successful tip
-    try {
-      const response = await fetch('/api/credits/balance')
-      if (response.ok) {
-        const data = await response.json()
-        setCurrentBalance(data.credits_balance || 0)
-      }
-    } catch (error) {
-      console.error('Failed to refresh balance:', error)
-    }
+    await refreshBalance()
   }
 
   const handleAIToggle = async (enabled: boolean) => {
@@ -547,7 +443,7 @@ function SessionRoomContent({
     )
   }
 
-  if (isJoining || !isConnected) {
+  if (isJoining || (!isConnected && !useHLS)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
         <div className="text-center animate-fade-in">
@@ -578,9 +474,7 @@ function SessionRoomContent({
       {/* Header */}
       <header className="border-b border-[#27272a] bg-[#1a1a1a]/95 backdrop-blur">
         <div className="px-3 sm:px-6 py-3 sm:py-5">
-          {/* Mobile: Stacked layout */}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            {/* Top row: Leave button and title */}
             <div className="flex items-center gap-3 lg:gap-6">
               <button
                 onClick={handleLeave}
@@ -597,11 +491,8 @@ function SessionRoomContent({
               </div>
             </div>
 
-            {/* Bottom row: Actions and info */}
             <div className="flex items-center justify-between gap-2 sm:gap-3">
-              {/* Action buttons */}
               <div className="flex items-center gap-2">
-                {/* Tip Host Button - Only show if not the host */}
                 {session.host_id !== userId && (
                   <button
                     onClick={() => setShowTipModal(true)}
@@ -611,7 +502,6 @@ function SessionRoomContent({
                     <span className="text-sm sm:text-base">Tip</span>
                   </button>
                 )}
-                {/* Presenter Invite Button - Only show if host */}
                 {session.host_id === userId && (
                   <button
                     onClick={() => setShowPresenterInvite(true)}
@@ -623,9 +513,7 @@ function SessionRoomContent({
                 )}
               </div>
 
-              {/* Info badges */}
               <div className="flex items-center gap-2 sm:gap-3">
-                {/* Credits Earned with Animation */}
                 {watchDuration > 0 && (
                   <div className={`px-2 sm:px-4 py-1.5 sm:py-2 bg-[#1a1a1a] border rounded-lg transition-all duration-300 ${
                     showCreditsAnimation
@@ -648,7 +536,6 @@ function SessionRoomContent({
                 <div className="px-3 sm:px-5 py-1.5 sm:py-2 bg-lime-400/10 text-lime-400 text-sm sm:text-lg rounded-lg font-mono font-bold">
                   {session.room_code}
                 </div>
-                {/* AI Module Control */}
                 {aiPermissions && (
                   <div className="hidden sm:block">
                     <AIModuleControl
@@ -666,7 +553,6 @@ function SessionRoomContent({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-        {/* Video Area */}
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 p-2 sm:p-4 lg:p-6">
             {useHLS && hlsStreamUrl ? (
@@ -682,18 +568,20 @@ function SessionRoomContent({
               <VideoGrid />
             )}
           </div>
-          {/* Controls - Fixed at bottom on mobile */}
           <div className="border-t border-[#27272a] bg-[#1a1a1a]/50 sticky bottom-0">
-            <Controls sessionId={session.id} isHost={session.host_id === userId} />
+            <Controls
+              sessionId={session.id}
+              isHost={session.host_id === userId}
+              virtualBgPlugin={virtualBgPlugin}
+              noiseCancellationActive={noiseCancellationActive}
+              onToggleNoiseCancellation={() => setNoiseCancellationActive(!noiseCancellationActive)}
+            />
           </div>
         </div>
 
-        {/* Stats Panel - Bottom right corner */}
         <StatsPanel />
 
-        {/* Right Sidebar - Chat/AI + OBS (Overlay on mobile, sidebar on desktop) */}
         <div className="hidden lg:flex lg:w-96 border-l border-[#27272a] flex-col bg-[#1a1a1a]/30">
-          {/* Tab Switcher */}
           <div className="flex border-b border-[#27272a]">
             <button
               onClick={() => setActiveTab("chat")}
@@ -708,7 +596,6 @@ function SessionRoomContent({
               <MessageSquare className="w-4 h-4" />
               <span>Team Chat</span>
             </button>
-            {/* Only show AI tab when module is enabled */}
             {aiPermissions?.moduleEnabled && (
               <button
                 onClick={() => setActiveTab("ai")}
@@ -724,7 +611,6 @@ function SessionRoomContent({
             )}
           </div>
 
-          {/* Chat Content */}
           <div className="flex-1 overflow-hidden">
             {activeTab === "chat" ? (
               <ChatSidebarEnhanced
@@ -739,17 +625,7 @@ function SessionRoomContent({
                 currentBalance={currentBalance}
                 canChat={aiPermissions?.canChat || false}
                 permissions={aiPermissions}
-                onBalanceUpdate={async () => {
-                  try {
-                    const response = await fetch('/api/credits/balance')
-                    if (response.ok) {
-                      const data = await response.json()
-                      setCurrentBalance(data.credits_balance || 0)
-                    }
-                  } catch (error) {
-                    console.error('Failed to refresh balance:', error)
-                  }
-                }}
+                onBalanceUpdate={refreshBalance}
               />
             ) : (
               <ChatSidebarEnhanced
@@ -765,14 +641,13 @@ function SessionRoomContent({
         </div>
       </div>
 
-      {/* Session End Modal */}
+      {/* Modals */}
       <SessionEndModal
         isOpen={showEndModal}
         onClose={handleCloseEndModal}
         sessionId={session.id}
       />
 
-      {/* Tip Modal */}
       <TipModal
         isOpen={showTipModal}
         onClose={() => setShowTipModal(false)}
@@ -784,18 +659,17 @@ function SessionRoomContent({
         onSuccess={handleTipSuccess}
       />
 
-      {/* AI Settings Modal */}
       {aiPermissions && (
         <AISettingsModal
           isOpen={showAISettings}
           onClose={() => setShowAISettings(false)}
           permissions={aiPermissions}
           sessionId={session.id}
+          hostId={session.host_id}
           onUpdate={handleAISettingsUpdate}
         />
       )}
 
-      {/* Presenter Invite Modal */}
       <PresenterInviteModal
         isOpen={showPresenterInvite}
         onClose={() => setShowPresenterInvite(false)}

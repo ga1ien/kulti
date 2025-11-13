@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { SessionRoom } from "@/components/session/session-room"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 interface SessionPageProps {
   params: Promise<{
@@ -34,9 +35,11 @@ export default async function SessionPage({ params }: SessionPageProps) {
   }
 
   return (
-    <SessionRoom
-      session={session}
-      userId={user.id}
-    />
+    <ErrorBoundary>
+      <SessionRoom
+        session={session}
+        userId={user.id}
+      />
+    </ErrorBoundary>
   )
 }

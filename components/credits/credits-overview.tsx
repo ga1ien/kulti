@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Coins, TrendingUp, TrendingDown, Activity } from "lucide-react"
+import { Coins, TrendingUp, TrendingDown, Activity, Loader2 } from "lucide-react"
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
 import { formatCredits } from "@/lib/credits/config"
 
 interface CreditsOverviewProps {
@@ -42,9 +43,16 @@ export function CreditsOverview({ userId }: CreditsOverviewProps) {
 
   if (loading) {
     return (
-      <div className="grid md:grid-cols-4 gap-6 animate-pulse">
+      <div className="grid md:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-[#1a1a1a] border border-[#27272a] rounded-xl p-6 h-32" />
+          <div key={i} className="bg-[#1a1a1a] border border-[#27272a] rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <LoadingSkeleton className="w-9 h-9 rounded-lg" />
+              <LoadingSkeleton className="h-4 w-24" />
+            </div>
+            <LoadingSkeleton className="h-9 w-20 mb-2" />
+            <LoadingSkeleton className="h-3 w-32" />
+          </div>
         ))}
       </div>
     )

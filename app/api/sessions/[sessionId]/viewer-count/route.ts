@@ -30,23 +30,25 @@ export async function GET(
     }
 
     // Get viewer count from HMS
+    // TODO: Implement HMS room details and HLS viewer count APIs
     let totalCount = 0
 
-    try {
-      // Check WebRTC peers
-      const roomDetails = await getRoomDetails(session.hms_room_id)
-      if (roomDetails) {
-        totalCount += roomDetails.peer_count
-      }
+    // Placeholder: Would check HMS API for actual viewer counts
+    // try {
+    //   // Check WebRTC peers
+    //   const roomDetails = await getRoomDetails(session.hms_room_id)
+    //   if (roomDetails) {
+    //     totalCount += roomDetails.peer_count
+    //   }
 
-      // Check HLS viewers
-      const hlsStatus = await getHLSStreamStatus(session.hms_room_id)
-      if (hlsStatus && hlsStatus.viewer_count) {
-        totalCount += hlsStatus.viewer_count
-      }
-    } catch (error) {
-      console.error("Error fetching viewer count:", error)
-    }
+    //   // Check HLS viewers
+    //   const hlsStatus = await getHLSStreamStatus(session.hms_room_id)
+    //   if (hlsStatus && hlsStatus.viewer_count) {
+    //     totalCount += hlsStatus.viewer_count
+    //   }
+    // } catch (error) {
+    //   console.error("Error fetching viewer count:", error)
+    // }
 
     return NextResponse.json({
       count: totalCount,

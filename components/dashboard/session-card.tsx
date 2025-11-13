@@ -88,7 +88,7 @@ export function SessionCard({ session, currentUserId }: SessionCardProps) {
           <div className="flex items-center gap-5 text-base text-[#71717a]">
             <div className="flex items-center gap-2">
               <Users size={16} />
-              <span>{participantCount}/{session.max_participants}</span>
+              <span>{participantCount} {participantCount === 1 ? 'viewer' : 'viewers'}</span>
             </div>
             {session.started_at && (
               <div className="flex items-center gap-2">

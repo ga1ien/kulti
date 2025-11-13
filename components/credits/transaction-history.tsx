@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ArrowUpRight, ArrowDownLeft, Clock } from "lucide-react"
+import { ArrowUpRight, ArrowDownLeft, Clock, Loader2 } from "lucide-react"
+import { TransactionRowSkeleton } from "@/components/ui/loading-skeleton"
 import { formatCredits } from "@/lib/credits/config"
 
 interface TransactionHistoryProps {
@@ -25,8 +26,9 @@ const TRANSACTION_LABELS: Record<string, string> = {
   first_session_bonus: "First Session Bonus",
   first_stream_bonus: "First Stream Bonus",
   referral_bonus: "Referral Bonus",
-  spent_boost: "Boosted Session",
-  spent_tip: "Tipped Creator",
+  spent_feature: "Boosted Session",
+  spent_tipping: "Sent Tip",
+  received_tip: "Received Tip",
 }
 
 const TRANSACTION_ICONS: Record<string, React.ReactNode> = {
@@ -36,14 +38,37 @@ const TRANSACTION_ICONS: Record<string, React.ReactNode> = {
   first_session_bonus: <ArrowUpRight className="w-4 h-4 text-yellow-500" />,
   first_stream_bonus: <ArrowUpRight className="w-4 h-4 text-yellow-500" />,
   referral_bonus: <ArrowUpRight className="w-4 h-4 text-yellow-500" />,
-  spent_boost: <ArrowDownLeft className="w-4 h-4 text-red-500" />,
-  spent_tip: <ArrowDownLeft className="w-4 h-4 text-red-500" />,
+  received_tip: <ArrowUpRight className="w-4 h-4 text-pink-500" />,
+  spent_feature: <ArrowDownLeft className="w-4 h-4 text-red-500" />,
+  spent_tipping: <ArrowDownLeft className="w-4 h-4 text-pink-500" />,
 }
 
 export function TransactionHistory({ userId }: TransactionHistoryProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<"all" | "earned" | "spent">("all")
+
+  const getTransactionLabel = (tx: Transaction): string => {
+    const baseLabel = TRANSACTION_LABELS[tx.type] || tx.type
+
+    // Add username context for tips
+    if (tx.type === 'spent_tipping' && tx.metadata?.recipientUsername) {
+      return `Tipped @${tx.metadata.recipientUsername}`
+    }
+    if (tx.type === 'received_tip' && tx.metadata?.fromUsername) {
+      return `Tip from @${tx.metadata.fromUsername}`
+    }
+
+    return baseLabel
+  }
+
+  const getTransactionSubtext = (tx: Transaction): string | null => {
+    // Show tip message if provided
+    if ((tx.type === 'spent_tipping' || tx.type === 'received_tip') && tx.metadata?.message) {
+      return `"${tx.metadata.message}"`
+    }
+    return null
+  }
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -87,9 +112,9 @@ export function TransactionHistory({ userId }: TransactionHistoryProps) {
     return (
       <div className="bg-[#1a1a1a] border border-[#27272a] rounded-xl p-6">
         <h2 className="font-mono text-2xl font-bold mb-6">Transaction History</h2>
-        <div className="space-y-4 animate-pulse">
+        <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-16 bg-[#2a2a2a] rounded-lg" />
+            <TransactionRowSkeleton key={i} />
           ))}
         </div>
       </div>
@@ -103,34 +128,40 @@ export function TransactionHistory({ userId }: TransactionHistoryProps) {
         <h2 className="font-mono text-2xl font-bold">Transaction History</h2>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="group" aria-label="Transaction filter">
           <button
             onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               filter === "all"
                 ? "bg-lime-400 text-black"
                 : "bg-[#2a2a2a] text-[#a1a1aa] hover:text-white"
             }`}
+            aria-label="Show all transactions"
+            aria-pressed={filter === "all"}
           >
             All
           </button>
           <button
             onClick={() => setFilter("earned")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               filter === "earned"
                 ? "bg-green-500 text-black"
                 : "bg-[#2a2a2a] text-[#a1a1aa] hover:text-white"
             }`}
+            aria-label="Show earned credits only"
+            aria-pressed={filter === "earned"}
           >
             Earned
           </button>
           <button
             onClick={() => setFilter("spent")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               filter === "spent"
                 ? "bg-red-500 text-black"
                 : "bg-[#2a2a2a] text-[#a1a1aa] hover:text-white"
             }`}
+            aria-label="Show spent credits only"
+            aria-pressed={filter === "spent"}
           >
             Spent
           </button>
@@ -139,8 +170,8 @@ export function TransactionHistory({ userId }: TransactionHistoryProps) {
 
       {/* Transactions List */}
       {filteredTransactions.length === 0 ? (
-        <div className="text-center py-12">
-          <Clock className="w-12 h-12 text-[#a1a1aa] mx-auto mb-4" />
+        <div className="text-center py-12" role="status" aria-label="No transactions">
+          <Clock className="w-12 h-12 text-[#a1a1aa] mx-auto mb-4" aria-hidden="true" />
           <p className="text-[#a1a1aa]">No transactions yet</p>
           <p className="text-sm text-[#71717a] mt-2">
             Join or host a session to start earning credits
@@ -162,9 +193,14 @@ export function TransactionHistory({ userId }: TransactionHistoryProps) {
                 </div>
                 <div>
                   <p className="font-medium">
-                    {TRANSACTION_LABELS[tx.type] || tx.type}
+                    {getTransactionLabel(tx)}
                   </p>
-                  <p className="text-sm text-[#71717a]">
+                  {getTransactionSubtext(tx) && (
+                    <p className="text-sm text-[#a1a1aa] italic mt-0.5">
+                      {getTransactionSubtext(tx)}
+                    </p>
+                  )}
+                  <p className="text-sm text-[#71717a] mt-0.5">
                     {formatDate(tx.created_at)}
                   </p>
                 </div>

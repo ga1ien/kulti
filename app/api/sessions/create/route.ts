@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createHMSRoom, createStreamKey } from "@/lib/hms/server"
 import { generateRoomCode } from "@/lib/utils"
+import { withRateLimit, RateLimiters } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,8 +15,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Apply rate limiting
+    return withRateLimit(request, RateLimiters.sessionCreation(user.id), async () => {
+      try {
+
     const body = await request.json()
-    const { title, description, isPublic, maxParticipants, enableOBS } = body
+    const { title, description, isPublic, maxPresenters, enableOBS } = body
 
     // Validate input
     if (!title || title.trim().length === 0) {
@@ -66,7 +71,7 @@ export async function POST(request: NextRequest) {
         hms_room_id: hmsRoomId,
         status: "live",
         is_public: isPublic !== false,
-        max_participants: maxParticipants || 4,
+        max_presenters: maxPresenters || 4,
         started_at: new Date().toISOString(),
         rtmp_enabled: enableOBS || false,
         rtmp_stream_key_id: streamKeyId,
@@ -89,16 +94,24 @@ export async function POST(request: NextRequest) {
       role: "host",
     })
 
-    return NextResponse.json({
-      success: true,
-      session,
-      roomCode,
+        return NextResponse.json({
+          success: true,
+          session,
+          roomCode,
+        })
+      } catch (innerError) {
+        console.error("Session creation error:", innerError)
+        return NextResponse.json(
+          { error: "Internal server error" },
+          { status: 500 }
+        )
+      }
     })
   } catch (error) {
-    console.error("Session creation error:", error)
+    console.error("Session authentication error:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: "Authentication failed" },
+      { status: 401 }
     )
   }
 }

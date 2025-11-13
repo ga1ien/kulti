@@ -69,18 +69,18 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
 
     return (
       <div className="relative">
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2">
           {/* Country Code Selector */}
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <button
               type="button"
               onClick={() => setShowDropdown(!showDropdown)}
               disabled={disabled}
-              className="h-14 px-4 bg-[#1a1a1a] border border-[#27272a] rounded-lg hover:border-lime-400/30 focus:border-lime-400 focus:outline-none transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-14 px-2 sm:px-3 bg-[#1a1a1a] border border-[#27272a] rounded-lg hover:border-lime-400/30 focus:border-lime-400 focus:outline-none transition-colors duration-200 flex items-center gap-1 sm:gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="text-2xl">{countryCode.flag}</span>
-              <span className="text-lg text-white">{countryCode.code}</span>
-              <ChevronDown className="w-4 h-4 text-[#71717a]" />
+              <span className="text-xl sm:text-2xl">{countryCode.flag}</span>
+              <span className="text-sm sm:text-base text-white">{countryCode.code}</span>
+              <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-[#71717a]" />
             </button>
 
             {/* Dropdown */}
@@ -93,7 +93,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
                 />
 
                 {/* Dropdown Menu */}
-                <div className="absolute top-full left-0 mt-2 w-64 bg-[#1a1a1a] border border-[#27272a] rounded-lg shadow-2xl z-20 max-h-80 overflow-y-auto">
+                <div className="absolute top-full left-0 mt-2 max-w-[90vw] md:w-64 bg-[#1a1a1a] border border-[#27272a] rounded-lg shadow-2xl z-20 max-h-80 overflow-y-auto">
                   {COUNTRY_CODES.map((country) => (
                     <button
                       key={`${country.code}-${country.country}`}
@@ -124,7 +124,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
             onChange={handlePhoneChange}
             disabled={disabled}
             placeholder={placeholder}
-            className={`flex-1 h-14 px-4 text-lg bg-[#1a1a1a] border rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[#71717a] text-white focus:outline-none focus:ring-2 focus:ring-lime-400/50 ${
+            className={`flex-1 min-w-0 h-14 px-3 sm:px-4 text-base sm:text-lg bg-[#1a1a1a] border rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-[#71717a] text-white focus:outline-none focus:ring-2 focus:ring-lime-400/50 ${
               error
                 ? 'border-red-500 focus:border-red-500'
                 : 'border-[#27272a] hover:border-lime-400/30 focus:border-lime-400'
@@ -136,11 +136,6 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
         {error && (
           <p className="mt-2 text-sm text-red-500">{error}</p>
         )}
-
-        {/* Helper Text */}
-        <p className="mt-2 text-xs text-[#71717a]">
-          Enter your phone number. We'll send you a verification code.
-        </p>
       </div>
     )
   }

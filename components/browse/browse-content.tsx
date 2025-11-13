@@ -3,17 +3,19 @@
 import { useState, useMemo } from "react"
 import { Search, Filter, SlidersHorizontal } from "lucide-react"
 import { SessionCard } from "@/components/dashboard/session-card"
+import { SessionCardSkeleton } from "@/components/ui/loading-skeleton"
 import { Session, Profile } from "@/types/database"
 
 interface BrowseContentProps {
   sessions: (Session & { host: Profile })[]
   currentUserId: string
+  isLoading?: boolean
 }
 
 type StatusFilter = "all" | "live" | "scheduled" | "ended"
 type SortOption = "featured" | "newest" | "popular"
 
-export function BrowseContent({ sessions, currentUserId }: BrowseContentProps) {
+export function BrowseContent({ sessions, currentUserId, isLoading = false }: BrowseContentProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [sortBy, setSortBy] = useState<SortOption>("featured")
@@ -82,47 +84,54 @@ export function BrowseContent({ sessions, currentUserId }: BrowseContentProps) {
   }, [sessions])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 px-4 sm:px-0">
       {/* Search and Filter Bar */}
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         {/* Search */}
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#71717a] w-5 h-5" />
+          <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-[#71717a] w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
+          <label htmlFor="session-search" className="sr-only">
+            Search sessions, topics, or hosts
+          </label>
           <input
+            id="session-search"
             type="text"
             placeholder="Search sessions, topics, or hosts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-[#1a1a1a] border border-[#27272a] rounded-xl text-white placeholder-[#71717a] focus:border-lime-400 focus:outline-none transition-colors text-lg"
+            className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-4 min-h-[48px] bg-[#1a1a1a] border border-[#27272a] rounded-xl text-white placeholder-[#71717a] focus:border-lime-400 focus:outline-none transition-colors text-base sm:text-lg"
+            aria-label="Search sessions"
           />
         </div>
 
         {/* Filter Toggle */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`px-6 py-4 rounded-xl border transition-colors flex items-center gap-2 font-medium ${
+          className={`min-h-[48px] px-5 sm:px-6 py-3 sm:py-4 rounded-xl border transition-colors flex items-center justify-center gap-2 font-medium ${
             showFilters
               ? "bg-lime-400 text-black border-lime-400"
               : "bg-[#1a1a1a] border-[#27272a] hover:border-lime-400"
           }`}
+          aria-label={showFilters ? "Hide filters" : "Show filters"}
+          aria-expanded={showFilters}
         >
-          <SlidersHorizontal className="w-5 h-5" />
-          Filters
+          <SlidersHorizontal className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
+          <span>Filters</span>
         </button>
       </div>
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="bg-[#1a1a1a] border border-[#27272a] rounded-xl p-6 space-y-6">
+        <div className="bg-[#1a1a1a] border border-[#27272a] rounded-xl p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Status Filter */}
           <div>
             <h3 className="text-sm font-medium text-[#a1a1aa] mb-3">Status</h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
               {(["all", "live", "scheduled", "ended"] as StatusFilter[]).map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                     statusFilter === status
                       ? "bg-lime-400 text-black"
                       : "bg-[#2a2a2a] text-[#a1a1aa] hover:text-white hover:bg-[#333333]"
@@ -140,12 +149,12 @@ export function BrowseContent({ sessions, currentUserId }: BrowseContentProps) {
           {/* Sort By */}
           <div>
             <h3 className="text-sm font-medium text-[#a1a1aa] mb-3">Sort By</h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
               {(["featured", "newest", "popular"] as SortOption[]).map((option) => (
                 <button
                   key={option}
                   onClick={() => setSortBy(option)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                     sortBy === option
                       ? "bg-lime-400 text-black"
                       : "bg-[#2a2a2a] text-[#a1a1aa] hover:text-white hover:bg-[#333333]"
@@ -163,14 +172,20 @@ export function BrowseContent({ sessions, currentUserId }: BrowseContentProps) {
 
       {/* Results Count */}
       <div className="flex items-center justify-between">
-        <p className="text-[#a1a1aa]">
+        <p className="text-sm sm:text-base text-[#a1a1aa]">
           {filteredSessions.length} session{filteredSessions.length !== 1 ? "s" : ""} found
         </p>
       </div>
 
       {/* Sessions Grid */}
-      {filteredSessions.length > 0 ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {[...Array(6)].map((_, i) => (
+            <SessionCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : filteredSessions.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredSessions.map((session) => (
             <SessionCard
               key={session.id}
@@ -180,10 +195,14 @@ export function BrowseContent({ sessions, currentUserId }: BrowseContentProps) {
           ))}
         </div>
       ) : (
-        <div className="text-center py-20">
-          <Filter className="w-16 h-16 text-[#a1a1aa] mx-auto mb-4" />
-          <p className="text-xl text-[#a1a1aa] mb-2">No sessions found</p>
-          <p className="text-[#71717a]">
+        <div
+          className="text-center py-12 sm:py-20"
+          role="status"
+          aria-label="No sessions found"
+        >
+          <Filter className="w-12 h-12 sm:w-16 sm:h-16 text-[#a1a1aa] mx-auto mb-4" aria-hidden="true" />
+          <p className="text-lg sm:text-xl text-[#a1a1aa] mb-2">No sessions found</p>
+          <p className="text-sm sm:text-base text-[#71717a]">
             Try adjusting your filters or search query
           </p>
         </div>

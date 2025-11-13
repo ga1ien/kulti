@@ -123,11 +123,11 @@ export function OTPInput({
 
   return (
     <div className="space-y-4 w-full">
-      <div className="flex gap-3 justify-center items-center">
+      <div className="flex gap-2 sm:gap-3 justify-center items-center">
         {Array.from({ length }).map((_, index) => (
           <input
             key={index}
-            ref={(el) => (inputRefs.current[index] = el)}
+            ref={(el) => { inputRefs.current[index] = el }}
             type="text"
             inputMode="numeric"
             maxLength={1}
@@ -137,7 +137,7 @@ export function OTPInput({
             onPaste={index === 0 ? handlePaste : undefined}
             onFocus={() => handleFocus(index)}
             disabled={disabled}
-            className={`w-14 h-14 md:w-16 md:h-16 text-center text-2xl md:text-3xl font-bold bg-[#1a1a1a] border-2 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-400/50 ${
+            className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-center text-lg md:text-2xl font-bold bg-[#1a1a1a] border-2 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-400/50 ${
               error
                 ? 'border-red-500 focus:border-red-500 text-red-500'
                 : otp[index]
@@ -152,11 +152,6 @@ export function OTPInput({
       {error && (
         <p className="text-sm text-red-500 text-center">{error}</p>
       )}
-
-      {/* Helper Text */}
-      <p className="text-xs text-[#71717a] text-center">
-        Enter the {length}-digit code sent to your phone
-      </p>
     </div>
   )
 }

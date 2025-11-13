@@ -17,6 +17,8 @@ import {
   calculateHostCredits,
   getSessionStats,
 } from '@/lib/analytics/session-tracking'
+import { notifyBadgeEarned } from '@/lib/notifications/service'
+import { BADGE_INFO } from '@/lib/badges/constants'
 
 export interface SessionEndResult {
   sessionId: string
@@ -151,6 +153,29 @@ export async function endSessionAndDistributeCredits(
           userId: participant.user_id,
           milestones: milestones.milestones_awarded,
         })
+      }
+
+      // Check and award badges based on updated stats
+      const { checkAndAwardBadges } = await import('@/lib/badges')
+      const badgeResult = await checkAndAwardBadges(participant.user_id)
+
+      // Send notifications for newly earned badges
+      if (badgeResult.success && badgeResult.badges_awarded.length > 0) {
+        for (const badgeId of badgeResult.badges_awarded) {
+          try {
+            const badgeInfo = BADGE_INFO[badgeId]
+            if (badgeInfo) {
+              await notifyBadgeEarned(
+                participant.user_id,
+                badgeId,
+                badgeInfo.name
+              )
+            }
+          } catch (notifError) {
+            console.error('Failed to send badge notification:', notifError)
+            // Continue with other notifications
+          }
+        }
       }
     } catch (error) {
       console.error(

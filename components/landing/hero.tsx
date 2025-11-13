@@ -35,12 +35,12 @@ export function Hero() {
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
         {/* Main headline */}
-        <h1 className="font-mono font-bold text-7xl md:text-8xl lg:text-9xl mb-8 animate-fade-in">
+        <h1 className="font-mono font-bold text-4xl sm:text-5xl md:text-7xl lg:text-8xl mb-8 animate-fade-in">
           Build The Future, Live
         </h1>
 
         {/* Subheadline */}
-        <div className="max-w-3xl mx-auto space-y-4 text-xl md:text-2xl text-[#a1a1aa] animate-fade-in-delay-1">
+        <div className="max-w-3xl mx-auto space-y-4 text-lg md:text-xl lg:text-2xl text-[#a1a1aa] animate-fade-in-delay-1">
           <p>This is the first time in history where being curious</p>
           <p className="font-semibold text-white">matters more than being credentialed.</p>
         </div>

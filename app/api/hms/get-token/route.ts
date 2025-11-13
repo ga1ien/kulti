@@ -19,6 +19,28 @@ export async function POST(request: NextRequest) {
 
     // Handle guest presenters (no authentication required)
     if (isGuest && userId && requestedRole === 'presenter') {
+      // Check presenter limit for guest presenters too
+      const { data: session } = await supabase
+        .from("sessions")
+        .select("max_presenters")
+        .eq("id", sessionId)
+        .single()
+
+      if (session) {
+        const { count: presenterCount } = await supabase
+          .from("session_participants")
+          .select("*", { count: "exact", head: true })
+          .eq("session_id", sessionId)
+          .in("role", ["host", "presenter"])
+
+        if (presenterCount !== null && presenterCount >= session.max_presenters) {
+          return NextResponse.json(
+            { error: `Session has reached maximum presenters limit (${session.max_presenters})` },
+            { status: 403 }
+          )
+        }
+      }
+
       // Generate HMS token for guest
       const tokenData = generateHMSToken(roomId, userId, 'presenter')
 
@@ -65,6 +87,22 @@ export async function POST(request: NextRequest) {
       role = "host"
     } else if (participant?.role === "presenter") {
       role = "presenter"
+    } else if (requestedRole === "presenter") {
+      // Check if there's room for another presenter
+      const { count: presenterCount } = await supabase
+        .from("session_participants")
+        .select("*", { count: "exact", head: true })
+        .eq("session_id", sessionId)
+        .in("role", ["host", "presenter"])
+
+      if (presenterCount !== null && presenterCount >= session.max_presenters) {
+        return NextResponse.json(
+          { error: `Session has reached maximum presenters limit (${session.max_presenters})` },
+          { status: 403 }
+        )
+      }
+
+      role = "presenter"
     }
 
     // If not already a participant, add them
@@ -88,21 +126,22 @@ export async function POST(request: NextRequest) {
     let hlsStreamUrl: string | null = null
 
     // Only viewers can use HLS (hosts and presenters need WebRTC for interaction)
-    if (role === "viewer") {
+    // TODO: Implement HLS switching for high participant counts
+    if (role === "viewer" && false) { // Disabled until HLS functions are implemented
       try {
         // Get room details to check participant count
-        const roomDetails = await getRoomDetails(roomId)
+        // const roomDetails = await getRoomDetails(roomId)
 
         // If room has more than HLS_THRESHOLD participants, use HLS for viewers
-        if (roomDetails && roomDetails.peer_count >= HLS_THRESHOLD) {
+        if (false) { // Disabled
           // Check if HLS stream is running
-          let hlsStatus = await getHLSStreamStatus(roomId)
+          // let hlsStatus = await getHLSStreamStatus(roomId)
 
           // If HLS not started yet, start it
-          if (!hlsStatus || hlsStatus.status !== "running") {
+          if (false) { // Disabled
             try {
-              const hlsStream = await startHLSStream(roomId)
-              hlsStreamUrl = hlsStream.stream_url
+              // const hlsStream = await startHLSStream(roomId)
+              // hlsStreamUrl = hlsStream.stream_url
               useHLS = true
             } catch (error) {
               console.error("Failed to start HLS stream:", error)
@@ -110,7 +149,7 @@ export async function POST(request: NextRequest) {
               useHLS = false
             }
           } else {
-            hlsStreamUrl = hlsStatus.stream_url
+            // hlsStreamUrl = hlsStatus.stream_url
             useHLS = true
           }
         }

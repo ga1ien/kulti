@@ -26,7 +26,7 @@ export default async function BrowsePage() {
 
   // Fetch all sessions with host info
   // Ordered by: boosted first, then live status, then created date
-  const { data: sessions } = await supabase
+  const { data: sessions, error } = await supabase
     .from("sessions")
     .select(`
       *,
@@ -36,6 +36,11 @@ export default async function BrowsePage() {
     .order("boosted_until", { ascending: false, nullsFirst: false })
     .order("status", { ascending: true })
     .order("created_at", { ascending: false })
+
+  // Handle errors gracefully
+  if (error) {
+    console.error("Failed to fetch sessions:", error)
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">

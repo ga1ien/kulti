@@ -8,6 +8,7 @@ import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
+import { Eye, EyeOff } from "lucide-react"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -20,6 +21,7 @@ export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -50,9 +52,9 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-8">
       <div>
-        <label htmlFor="email" className="block text-lg font-medium mb-3 text-white">
+        <label htmlFor="email" className="block text-base md:text-lg font-medium mb-3 text-white">
           Email
         </label>
         <Input
@@ -68,16 +70,30 @@ export function LoginForm() {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-lg font-medium mb-3 text-white">
+        <label htmlFor="password" className="block text-base md:text-lg font-medium mb-3 text-white">
           Password
         </label>
-        <Input
-          id="password"
-          type="password"
-          placeholder="••••••••"
-          {...register("password")}
-          className="h-14 text-lg"
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            placeholder="••••••••"
+            {...register("password")}
+            className="h-14 text-lg pr-12"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-0 top-0 h-14 px-4 flex items-center justify-center text-[#71717a] hover:text-white transition-colors"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? (
+              <EyeOff className="w-5 h-5" />
+            ) : (
+              <Eye className="w-5 h-5" />
+            )}
+          </button>
+        </div>
         {errors.password && (
           <p className="text-red-500 text-base mt-2">{errors.password.message}</p>
         )}
@@ -92,7 +108,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-xl px-12 py-5 rounded-xl transition-colors duration-300 disabled:opacity-50 disabled:hover:scale-100"
+        className="w-full bg-lime-400 hover:bg-lime-500 text-black font-bold text-lg md:text-xl px-6 md:px-12 py-4 md:py-5 rounded-xl transition-colors duration-300 disabled:opacity-50 disabled:hover:scale-100"
       >
         {isSubmitting ? "Signing in..." : "Sign In"}
       </button>

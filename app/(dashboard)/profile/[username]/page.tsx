@@ -1,9 +1,12 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect, notFound } from "next/navigation"
+import { Suspense } from "react"
 import { ProfileHeader } from "@/components/profile/profile-header"
 import { ProfileStats } from "@/components/profile/profile-stats"
 import { ProfileBadges } from "@/components/profile/profile-badges"
 import { ProfileSessionHistory } from "@/components/profile/profile-session-history"
+import { MyInviteCodes } from "@/components/profile/my-invite-codes"
+import { ProfileScrollHandler } from "@/components/profile/profile-scroll-handler"
 
 interface ProfilePageProps {
   params: Promise<{
@@ -67,6 +70,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
+      <Suspense>
+        <ProfileScrollHandler />
+      </Suspense>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Profile Header */}
         <ProfileHeader profile={profile} isOwnProfile={isOwnProfile} />
@@ -80,6 +86,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         <div className="mt-12">
           <ProfileBadges badges={profile.badges || []} />
         </div>
+
+        {/* Invite Codes (only for own profile) */}
+        {isOwnProfile && (
+          <div id="invite-codes-section" className="mt-12 rounded-xl transition-all duration-500">
+            <h2 className="text-2xl font-bold mb-6">My Invite Codes</h2>
+            <MyInviteCodes userId={profile.id} />
+          </div>
+        )}
 
         {/* Session History */}
         <div className="mt-12">

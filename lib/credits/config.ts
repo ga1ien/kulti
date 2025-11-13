@@ -174,9 +174,11 @@ export const TRANSACTION_TYPES = {
   EARNED_HOSTING: 'earned_hosting',
   EARNED_CHATTING: 'earned_chatting',
   EARNED_HELPING: 'earned_helping',
+  RECEIVED_TIP: 'received_tip',
   BONUS_MILESTONE: 'bonus_milestone',
   BONUS_COMPLETION: 'bonus_completion',
   BONUS_FIRST_SESSION: 'bonus_first_session',
+  REFERRAL_BONUS: 'referral_bonus',
 
   // Spending types
   SPENT_FEATURE: 'spent_feature',

@@ -347,6 +347,7 @@ export async function tipUser(params: {
   message?: string
 }): Promise<{ success: boolean; error?: string }> {
   const { fromUserId, toUserId, amount, sessionId, message } = params
+  const supabase = await createClient()
 
   // Check sender has sufficient balance
   const hasBalance = await hasSufficientBalance(fromUserId, amount)
@@ -355,22 +356,39 @@ export async function tipUser(params: {
   }
 
   try {
+    // Fetch usernames for both users
+    const { data: users } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .in('id', [fromUserId, toUserId])
+
+    const fromUser = users?.find(u => u.id === fromUserId)
+    const toUser = users?.find(u => u.id === toUserId)
+
     // Deduct from sender
     await deductCredits({
       userId: fromUserId,
       amount,
       type: 'spent_tipping',
       sourceSessionId: sessionId,
-      metadata: { recipient: toUserId, message },
+      metadata: {
+        recipientId: toUserId,
+        recipientUsername: toUser?.username,
+        message
+      },
     })
 
     // Add to recipient
     await addCredits({
       userId: toUserId,
       amount,
-      type: 'earned_helping', // Using helping as generic "received" type
+      type: 'received_tip',
       sourceSessionId: sessionId,
-      metadata: { sender: fromUserId, message, tip: true },
+      metadata: {
+        fromUserId,
+        fromUsername: fromUser?.username,
+        message
+      },
     })
 
     return { success: true }

@@ -141,81 +141,42 @@ export async function completePhoneSignup(params: {
   password: string
 }): Promise<PhoneAuthResult> {
   try {
-    const supabase = createClient()
-
-    // Update the user with email and password
-    const { error: updateError } = await supabase.auth.updateUser({
-      email: params.email,
-      password: params.password,
-    })
-
-    if (updateError) {
-      console.error('Update user error:', updateError)
-      return {
-        success: false,
-        error: 'Failed to add email to account',
-      }
-    }
-
-    // Check if profile already exists
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('id, username')
-      .eq('id', params.userId)
-      .single()
-
-    if (existingProfile) {
-      return {
-        success: false,
-        error: 'Account already has a profile. Please try logging in instead.',
-      }
-    }
-
-    // Check if username is taken
-    const { data: existingUsername } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('username', params.username)
-      .single()
-
-    if (existingUsername) {
-      return {
-        success: false,
-        error: `Username "${params.username}" is already taken. Please choose another.`,
-      }
-    }
-
-    // Create profile
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: params.userId,
-      username: params.username,
-      display_name: params.displayName,
-      is_approved: true, // Auto-approve phone-verified users
-    })
-
-    if (profileError) {
-      console.error('Create profile error:', profileError)
-      return {
-        success: false,
-        error: `Failed to create profile: ${profileError.message}`,
-      }
-    }
-
-    // Record invite code usage and award credits
-    const { error: inviteError } = await supabase.rpc('use_invite_code', {
-      p_code: params.inviteCode,
-      p_user_id: params.userId,
-      p_metadata: {
-        signup_method: 'phone',
-        signup_timestamp: new Date().toISOString(),
-        phone: params.phone,
+    // Call server-side API to handle everything
+    const response = await fetch('/api/auth/complete-phone-signup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        userId: params.userId,
+        email: params.email,
+        password: params.password,
+        username: params.username,
+        displayName: params.displayName,
+        inviteCode: params.inviteCode,
+        phone: params.phone,
+      }),
     })
 
-    if (inviteError) {
-      console.error('Use invite code error:', inviteError)
-      // Don't fail the whole signup if invite code fails
-      // User is already created at this point
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      return {
+        success: false,
+        error: result.error || 'Failed to complete signup',
+      }
+    }
+
+    // Refresh session on client to sync with server-side updates
+    const supabase = createClient()
+    const { error: refreshError } = await supabase.auth.refreshSession()
+
+    if (refreshError) {
+      console.error('Client session refresh error:', refreshError)
+      return {
+        success: false,
+        error: 'Account created but session refresh failed. Please try logging in.',
+      }
     }
 
     return { success: true }

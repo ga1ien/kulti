@@ -41,7 +41,8 @@ export const VideoTile = memo(function VideoTile({ peer, isLocal, isScreenShare,
     }
 
     const interval = setInterval(() => {
-      const level = peerAudio.volume || 0
+      // HMS audio level is accessed via the audioLevel property, not volume
+      const level = (peerAudio as any)?.audioLevel || 0
       // Normalize to 0-100 range and smooth it
       setAudioLevel(Math.min(100, level * 100))
     }, 100)
