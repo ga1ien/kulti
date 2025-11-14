@@ -261,7 +261,7 @@ export default function RoomPage({ params }: PageProps) {
             <TopicFeed
               roomId={room.id}
               topics={topics}
-              _currentUserId={currentUserId}
+              currentUserId={currentUserId}
               onTopicCreated={loadRoomData}
             />
           </div>

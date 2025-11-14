@@ -59,7 +59,7 @@ export function TopicFeed({
     filter === "all" ? topics : topics.filter((t) => t.status === filter)
 
   const handleTopicClick = (topic: TopicWithCreator) => {
-    setSelectedTopic(_topic)
+    setSelectedTopic(topic)
     setShowDetailModal(true)
   }
 
@@ -126,7 +126,7 @@ export function TopicFeed({
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredTopics.map((_topic) => (
+          {filteredTopics.map((topic) => (
             <TopicCard
               key={topic.id}
               topic={topic}
@@ -221,7 +221,7 @@ function TopicCard({ topic, currentUserId, isHost, onClick }: TopicCardProps) {
 
   return (
     <div
-      onClick={() => onClick(_topic)}
+      onClick={() => onClick(topic)}
       className="bg-[#1a1a1a] border border-[#27272a] rounded-xl p-6 hover:border-[#3f3f46] transition-colors cursor-pointer"
     >
       <div className="flex gap-4">

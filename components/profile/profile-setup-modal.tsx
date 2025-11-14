@@ -96,7 +96,7 @@ export function ProfileSetupModal({
       })
       onClose()
     } catch (err) {
-      logger.error('Profile setup error:', err)
+      logger.error('Profile setup error:', { error: err })
       setError('Failed to save profile. Please try again.')
     } finally {
       setLoading(false)

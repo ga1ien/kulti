@@ -5,6 +5,8 @@
  * Reduces duplication and provides consistent error handling.
  */
 
+import { logger } from '@/lib/logger'
+
 export interface ApiResponse<T = any> {
   data?: T
   error?: string
@@ -56,7 +58,7 @@ export async function fetchCreditBalance(): Promise<number | null> {
     return response.data.credits_balance || 0
   }
 
-  logger.error('Failed to fetch credit balance:', response.error)
+  logger.error('Failed to fetch credit balance', { error: response.error })
   return null
 }
 
@@ -73,7 +75,7 @@ export async function sendHeartbeat(sessionId: string, isActive: boolean): Promi
       sessionId,
       isActive,
     }),
-  }).catch((error) => logger.error('Heartbeat error', { error, sessionId, userId, isActive }))
+  }).catch((error) => logger.error('Heartbeat error', { error, sessionId, isActive }))
 }
 
 /**

@@ -27,7 +27,7 @@ export function useNotifications() {
       setNotifications(data.notifications || [])
       setUnreadCount(data.unreadCount || 0)
     } catch (err) {
-      logger.error('Error fetching notifications:', err)
+      logger.error('Error fetching notifications', { error: err })
       setError(err instanceof Error ? err.message : 'Failed to fetch notifications')
     } finally {
       setLoading(false)
@@ -99,7 +99,7 @@ export function useNotifications() {
       )
       setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch (err) {
-      logger.error('Error marking notification as read:', err)
+      logger.error('Error marking notification as read:', { error: err })
       // Optionally refetch to get correct state
       fetchNotifications()
     }
@@ -119,7 +119,7 @@ export function useNotifications() {
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
       setUnreadCount(0)
     } catch (err) {
-      logger.error('Error marking all notifications as read:', err)
+      logger.error('Error marking all notifications as read:', { error: err })
       // Optionally refetch to get correct state
       fetchNotifications()
     }

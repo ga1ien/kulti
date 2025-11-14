@@ -43,11 +43,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      logger.error('Error boundary caught:', error, errorInfo)
+      logger.error('Error boundary caught', { error, errorInfo })
     }
 
     // Call custom error handler if provided
-    this.props.onError?.(_error, _errorInfo)
+    this.props.onError?.(error, errorInfo)
   }
 
   handleReset = () => {

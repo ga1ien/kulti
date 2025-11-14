@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { fetchCreditBalance } from '@/lib/utils/api'
+import { logger } from '@/lib/logger'
 
 export function useCreditBalance() {
   const [balance, setBalance] = useState<number>(0)

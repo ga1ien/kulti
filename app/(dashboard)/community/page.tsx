@@ -31,7 +31,7 @@ export default async function CommunityPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <RoomBrowser rooms={rooms || []} _currentUserId={user.id} />
+        <RoomBrowser rooms={rooms || []} currentUserId={user.id} />
       </div>
     </div>
   )

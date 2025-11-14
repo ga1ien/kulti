@@ -85,13 +85,13 @@ export function HLSViewer({ streamUrl, sessionId, onError }: HLSViewerProps) {
         setIsLive(true)
         // Auto-play when stream is ready
         video.play().catch((err) => {
-          logger.error("Autoplay failed:", err)
+          logger.error("Autoplay failed:", { error: err })
           toast.error("Click the video to start playback", { duration: 3000 })
         })
       })
 
       hls.on(Hls.Events.ERROR, (event, data) => {
-        logger.error("HLS error:", data)
+        logger.error("HLS error:", { data })
 
         if (data.fatal) {
           switch (data.type) {

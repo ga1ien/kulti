@@ -60,7 +60,7 @@ export function FindSessionModal({ isOpen, onClose }: FindSessionModalProps) {
 
       setUsers(data.users || [])
     } catch (err) {
-      logger.error('Fetch users error:', err)
+      logger.error('Fetch users error', { error: err })
       const errorMessage = 'Failed to load compatible users. Please try again.'
       setError(errorMessage)
       toast.error(errorMessage)
@@ -111,7 +111,7 @@ export function FindSessionModal({ isOpen, onClose }: FindSessionModalProps) {
         toast.error(errorMessage)
       }
     } catch (err) {
-      logger.error('Quick match error:', err)
+      logger.error('Quick match error', { error: err })
       const errorMessage = 'Failed to find session. Please check your connection and try again.'
       setError(errorMessage)
       toast.error(errorMessage)
@@ -161,7 +161,7 @@ export function FindSessionModal({ isOpen, onClose }: FindSessionModalProps) {
         toast.error(errorMessage)
       }
     } catch (err) {
-      logger.error('Create session error:', err)
+      logger.error('Create session error', { error: err })
       const errorMessage = 'Failed to create session. Please try again.'
       setError(errorMessage)
       toast.error(errorMessage)

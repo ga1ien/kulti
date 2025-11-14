@@ -39,7 +39,7 @@ export function SearchBar({ className = "" }: SearchBarProps) {
       try {
         setRecentSearches(JSON.parse(stored))
       } catch (e) {
-        logger.error('Failed to parse recent searches:', e)
+        logger.error('Failed to parse recent searches', { error: e })
       }
     }
   }, [])

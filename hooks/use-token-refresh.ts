@@ -135,7 +135,7 @@ export function useTokenRefresh({
               toast.success('Reconnected successfully', { icon: '✅' })
             }
           } catch (refreshError) {
-            logger.error('Manual refresh failed:', refreshError)
+            logger.error('Manual refresh failed:', { error: refreshError })
           }
         }
 

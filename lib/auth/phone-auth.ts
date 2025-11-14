@@ -180,7 +180,7 @@ export async function completePhoneSignup(params: {
     const { error: refreshError } = await supabase.auth.refreshSession()
 
     if (refreshError) {
-      logger.error('Client session refresh error:', refreshError)
+      logger.error('Client session refresh error', { error: refreshError })
       return {
         success: false,
         error: 'Account created but session refresh failed. Please try logging in.',

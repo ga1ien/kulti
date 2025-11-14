@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react"
 import { RoomWithMembership, RoomCategory } from "@/lib/community/types"
 import Link from "next/link"
+import { Search, Hash, Users, MessageSquare } from "lucide-react"
 
 interface RoomBrowserProps {
   rooms: RoomWithMembership[]

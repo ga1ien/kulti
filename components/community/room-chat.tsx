@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { MessageSquare } from "lucide-react"
+import { MessageSquare, Reply, Send, Smile } from "lucide-react"
 import { MessageWithReactions, MessageThread } from "@/lib/community/types"
 import { sendMessage, reactToMessage, getMessageThread } from "@/lib/community"
 import { formatDistanceToNow } from "date-fns"

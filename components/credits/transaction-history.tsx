@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { DollarSign, TrendingUp, Plus, Minus, Award, Users } from "lucide-react"
+import { DollarSign, TrendingUp, Plus, Minus, Award, Users, ArrowUpRight, ArrowDownRight, ArrowDownLeft, Gift, User, MessageSquare, Clock } from "lucide-react"
 import { TransactionRowSkeleton } from "@/components/ui/loading-skeleton"
 import { formatCredits } from "@/lib/credits/config"
 import { logger } from '@/lib/logger'

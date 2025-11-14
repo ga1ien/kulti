@@ -71,7 +71,7 @@ export function CreateSessionModal({ onClose }: CreateSessionModalProps) {
       router.push(`/s/${result.roomCode}`)
       router.refresh()
     } catch (err) {
-      logger.error("Failed to create session:", err)
+      logger.error("Failed to create session", { error: err })
       const errorMessage = err instanceof Error ? err.message : "Network error. Please try again."
       toast.error(errorMessage)
       setError(errorMessage)

@@ -65,7 +65,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
   const markStepComplete = (step: keyof OnboardingProgress) => {
     const newProgress = { ...progress, [step]: true }
-    logger.info('[Onboarding] markStepComplete called:', step, 'new progress:', newProgress)
+    logger.info('[Onboarding] markStepComplete called', { step, newProgress })
     setProgress(newProgress)
 
     // SSR safety check

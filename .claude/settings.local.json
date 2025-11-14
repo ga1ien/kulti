@@ -104,7 +104,8 @@
       "Bash(\"app/api/settings/notifications/route.ts\")",
       "Bash(if [ -f \"$file\" ])",
       "Bash(perl -i -pe:*)",
-      "Bash(timeout 300 npm run build:*)"
+      "Bash(timeout 300 npm run build:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []

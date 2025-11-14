@@ -8,6 +8,7 @@
 import { useEffect } from 'react'
 import { useHMSNotifications, HMSNotificationTypes } from '@100mslive/react-sdk'
 import { toast } from 'react-hot-toast'
+import { logger } from '@/lib/logger'
 
 export function useHMSNotificationHandler() {
   const notification = useHMSNotifications()

@@ -71,7 +71,7 @@ export function SuggestionModal({ isOpen, onClose, suggestion }: SuggestionModal
         onClose()
       }
     } catch (err) {
-      logger.error('Accept suggestion error:', err)
+      logger.error('Accept suggestion error', { error: err })
       setError('Failed to accept suggestion')
     } finally {
       setLoading(false)
@@ -99,7 +99,7 @@ export function SuggestionModal({ isOpen, onClose, suggestion }: SuggestionModal
 
       onClose()
     } catch (err) {
-      logger.error('Decline suggestion error:', err)
+      logger.error('Decline suggestion error:', { error: err })
       setError('Failed to decline suggestion')
     } finally {
       setLoading(false)
