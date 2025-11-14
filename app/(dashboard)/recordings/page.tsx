@@ -3,7 +3,6 @@
 import { Suspense } from "react"
 import { RecordingsContent } from "@/components/recordings/recordings-content"
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
-import { Film } from "lucide-react"
 
 export default function RecordingsPage() {
   return (

@@ -33,7 +33,7 @@ export default async function Image({ searchParams }: { searchParams: Promise<{ 
         inviterName = creator.display_name
       }
     } catch (error) {
-      logger.error('Failed to fetch inviter name:', error)
+      logger.error('Failed to fetch inviter name:', { error })
     }
   }
 

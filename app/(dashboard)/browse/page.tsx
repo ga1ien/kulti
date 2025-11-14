@@ -40,7 +40,7 @@ export default async function BrowsePage() {
 
   // Handle errors gracefully
   if (error) {
-    logger.error("Failed to fetch sessions:", error)
+    logger.error("Failed to fetch sessions:", { error })
   }
 
   return (

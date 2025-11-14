@@ -59,13 +59,13 @@ export function initSentry() {
       },
 
       // Add additional context
-      integrations: [
+      integrations: typeof window !== 'undefined' ? [
         Sentry.browserTracingIntegration(),
         Sentry.replayIntegration({
           maskAllText: true,
           blockAllMedia: true,
         }),
-      ],
+      ] : [],
 
       // Configure tracing
       tracePropagationTargets: [

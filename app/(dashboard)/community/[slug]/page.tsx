@@ -20,8 +20,8 @@ import {
   getMessages,
   getTopics,
 } from "@/lib/community"
-import type {
 import { logger } from '@/lib/logger'
+import type {
   RoomWithMembership,
   MessageWithReactions,
   TopicWithCreator,
@@ -71,7 +71,7 @@ export default function RoomPage({ params }: PageProps) {
         setTopics(topicsData.topics)
       }
     } catch (error) {
-      logger.error("Failed to load room:", error)
+      logger.error("Failed to load room:", { error })
     } finally {
       setIsLoading(false)
     }
@@ -85,7 +85,7 @@ export default function RoomPage({ params }: PageProps) {
       await joinRoom(room.id)
       await loadRoomData()
     } catch (error) {
-      logger.error("Failed to join room:", error)
+      logger.error("Failed to join room:", { error })
       alert("Failed to join room. Please try again.")
     } finally {
       setIsJoining(false)
@@ -102,7 +102,7 @@ export default function RoomPage({ params }: PageProps) {
       await leaveRoom(room.id)
       router.push("/community")
     } catch (error) {
-      logger.error("Failed to leave room:", error)
+      logger.error("Failed to leave room:", { error })
       alert("Failed to leave room. Please try again.")
     } finally {
       setIsJoining(false)

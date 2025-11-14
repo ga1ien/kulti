@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
-import { Search, Filter, X, Calendar, CheckCircle2, Clock, AlertCircle } from "lucide-react"
+import { Search, Filter, X, CheckCircle2, Clock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export type RecordingFilters = {
@@ -14,6 +14,7 @@ export type RecordingFilters = {
 
 interface RecordingFiltersProps {
   filters: RecordingFilters
+  // eslint-disable-next-line no-unused-vars
   onFiltersChange: (filters: RecordingFilters) => void
   recordingCount: number
 }
