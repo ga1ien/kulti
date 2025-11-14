@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { logger } from "@/lib/logger"
 
 export async function DELETE(
   request: NextRequest,
@@ -57,7 +58,7 @@ export async function DELETE(
       .eq("id", recordingId)
 
     if (deleteError) {
-      console.error("Error deleting recording:", deleteError)
+      logger.error("Error deleting recording", { error: deleteError, recordingId })
       return NextResponse.json(
         { error: "Failed to delete recording" },
         { status: 500 }
@@ -66,7 +67,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Delete recording error:", error)
+    logger.error("Delete recording error", { error })
     return NextResponse.json(
       { error: "Failed to delete recording" },
       { status: 500 }

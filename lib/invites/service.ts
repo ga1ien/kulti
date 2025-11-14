@@ -6,6 +6,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import type { Invite, InviteUse, InviteStats } from '@/types/database'
+import { logger } from '@/lib/logger'
 
 /**
  * Metadata that can be attached to invites
@@ -48,7 +49,7 @@ export async function createInviteCode(
   })
 
   if (error) {
-    console.error('Failed to create invite code:', error)
+    logger.error('Failed to create invite code', { error, params })
     throw new Error(`Failed to create invite code: ${error.message}`)
   }
 
@@ -72,7 +73,7 @@ export async function validateInviteCode(
     .maybeSingle()
 
   if (error) {
-    console.error('[validateInviteCode] Database error:', error)
+    logger.error('Validate invite code database error', { error, code })
     return { isValid: false, error: 'Invalid invite code' }
   }
 
@@ -110,7 +111,7 @@ export async function useInviteCode(
   })
 
   if (error) {
-    console.error('Failed to use invite code:', error)
+    logger.error('Failed to use invite code', { error, code, userId })
 
     // Handle specific race condition errors
     if (error.message?.includes('lock_not_available')) {
@@ -162,7 +163,7 @@ export async function getAllInvites(options: {
   const { data, error } = await query
 
   if (error) {
-    console.error('Failed to get invites:', error)
+    logger.error('Failed to get invites', { error, options })
     return []
   }
 
@@ -182,7 +183,7 @@ export async function getUserInvites(userId: string): Promise<Invite[]> {
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Failed to get user invites:', error)
+    logger.error('Failed to get user invites', { error, userId })
     return []
   }
 
@@ -202,7 +203,7 @@ export async function getInviteAnalytics(
   })
 
   if (error) {
-    console.error('Failed to get invite analytics:', error)
+    logger.error('Failed to get invite analytics', { error, inviteId })
     return null
   }
 
@@ -256,7 +257,7 @@ export async function deactivateInvite(inviteId: string): Promise<boolean> {
     .eq('id', inviteId)
 
   if (error) {
-    console.error('Failed to deactivate invite:', error)
+    logger.error('Failed to deactivate invite', { error, inviteId })
     return false
   }
 
@@ -275,7 +276,7 @@ export async function reactivateInvite(inviteId: string): Promise<boolean> {
     .eq('id', inviteId)
 
   if (error) {
-    console.error('Failed to reactivate invite:', error)
+    logger.error('Failed to reactivate invite', { error, inviteId })
     return false
   }
 
@@ -328,7 +329,7 @@ export async function getInviteUsers(inviteId: string): Promise<
     .order('used_at', { ascending: false })
 
   if (error) {
-    console.error('Failed to get invite users:', error)
+    logger.error('Failed to get invite users', { error, inviteId })
     return []
   }
 

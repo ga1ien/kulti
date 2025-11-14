@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { startRecording } from "@/lib/hms/server"
+import { logger } from "@/lib/logger"
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (recordingError) {
-      console.error("Error creating recording record:", recordingError)
+      logger.error("Error creating recording record", { error: recordingError, sessionId })
       return NextResponse.json(
         { error: "Failed to create recording record" },
         { status: 500 }
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("Start recording error:", error)
+    logger.error("Start recording error", { error })
     return NextResponse.json(
       { error: "Failed to start recording" },
       { status: 500 }

@@ -11,6 +11,7 @@ import {
   calculateHostCredits,
 } from '@/lib/analytics/session-tracking'
 import { MILESTONES } from '@/lib/credits/config'
+import { logger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
@@ -100,7 +101,7 @@ export async function GET(
       role: participant.role,
     })
   } catch (error) {
-    console.error('Get session summary error:', error)
+    logger.error('Get session summary error', { error })
     return NextResponse.json(
       { error: 'Failed to get session summary' },
       { status: 500 }

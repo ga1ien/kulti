@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createHMSRoom, createStreamKey } from "@/lib/hms/server"
 import { generateRoomCode } from "@/lib/utils"
 import { withRateLimit, RateLimiters } from "@/lib/rate-limit"
+import { logger } from "@/lib/logger"
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
         const streamKeyData = await createStreamKey(hmsRoomId)
         streamKeyId = streamKeyData.id
       } catch (error) {
-        console.error("Failed to create stream key:", error)
+        logger.error("Failed to create stream key", { error, hmsRoomId })
         // Continue with session creation even if stream key fails
       }
     }
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (sessionError) {
-      console.error("Session creation error:", sessionError)
+      logger.error("Session creation error", { error: sessionError, title })
       return NextResponse.json(
         { error: "Failed to create session" },
         { status: 500 }
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
           roomCode,
         })
       } catch (innerError) {
-        console.error("Session creation error:", innerError)
+        logger.error("Session creation error", { error: innerError })
         return NextResponse.json(
           { error: "Internal server error" },
           { status: 500 }
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error("Session authentication error:", error)
+    logger.error("Session authentication error", { error })
     return NextResponse.json(
       { error: "Authentication failed" },
       { status: 401 }

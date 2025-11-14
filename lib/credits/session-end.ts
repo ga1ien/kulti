@@ -19,6 +19,7 @@ import {
 } from '@/lib/analytics/session-tracking'
 import { notifyBadgeEarned } from '@/lib/notifications/service'
 import { BADGE_INFO } from '@/lib/badges/constants'
+import { logger } from '@/lib/logger'
 
 export interface SessionEndResult {
   sessionId: string
@@ -172,16 +173,13 @@ export async function endSessionAndDistributeCredits(
               )
             }
           } catch (notifError) {
-            console.error('Failed to send badge notification:', notifError)
+            logger.error('Failed to send badge notification', { error: notifError, userId: participant.user_id })
             // Continue with other notifications
           }
         }
       }
     } catch (error) {
-      console.error(
-        `Failed to process credits for user ${participant.user_id}:`,
-        error
-      )
+      logger.error('Failed to process credits for user', { error, userId: participant.user_id, sessionId })
       // Continue with other participants even if one fails
     }
   }

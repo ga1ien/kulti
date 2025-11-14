@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { logger } from "@/lib/logger"
 
 interface RouteParams {
   params: Promise<{
@@ -54,7 +55,7 @@ export async function GET(
       count: totalCount,
     })
   } catch (error) {
-    console.error("Viewer count error:", error)
+    logger.error("Viewer count error", { error })
     return NextResponse.json(
       { error: "Failed to get viewer count" },
       { status: 500 }

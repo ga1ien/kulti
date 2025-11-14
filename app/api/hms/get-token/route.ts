@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { generateHMSToken } from "@/lib/hms/server"
+import { logger } from "@/lib/logger"
 
 const HLS_THRESHOLD = 100 // Switch to HLS when more than 100 viewers
 
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
               // hlsStreamUrl = hlsStream.stream_url
               useHLS = true
             } catch (error) {
-              console.error("Failed to start HLS stream:", error)
+              logger.error("Failed to start HLS stream", { error, roomId })
               // Fall back to WebRTC if HLS fails
               useHLS = false
             }
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (error) {
-        console.error("Error checking HLS eligibility:", error)
+        logger.error("Error checking HLS eligibility", { error, roomId, role })
         // Fall back to WebRTC if there's an error
         useHLS = false
       }
@@ -172,7 +173,7 @@ export async function POST(request: NextRequest) {
       hlsStreamUrl: useHLS ? hlsStreamUrl : null,
     })
   } catch (error) {
-    console.error("Token generation error:", error)
+    logger.error("Token generation error", { error, body: request.body })
     return NextResponse.json(
       { error: "Failed to generate token" },
       { status: 500 }

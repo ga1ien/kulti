@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { endSessionAndDistributeCredits } from '@/lib/credits/session-end'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       ...result,
     })
   } catch (error) {
-    console.error('End session error:', error)
+    logger.error('End session error', { error })
     return NextResponse.json(
       {
         error: 'Failed to end session',

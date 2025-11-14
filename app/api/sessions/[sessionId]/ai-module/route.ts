@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export async function PUT(
   request: NextRequest,
@@ -62,7 +63,7 @@ export async function PUT(
     })
 
     if (error) {
-      console.error('Update AI module error:', error)
+      logger.error('Update AI module error', { error, sessionId })
       return NextResponse.json(
         { error: 'Failed to update AI module settings' },
         { status: 500 }
@@ -78,7 +79,7 @@ export async function PUT(
       ...data,
     })
   } catch (error) {
-    console.error('AI module API error:', error)
+    logger.error('AI module API error', { error })
     return NextResponse.json(
       { error: 'Failed to update AI module' },
       { status: 500 }

@@ -7,6 +7,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import type { TransactionType } from './config'
+import { logger } from '@/lib/logger'
 
 export interface CreditBalance {
   credits_balance: number
@@ -58,7 +59,7 @@ export async function addCredits(params: AddCreditsParams): Promise<AddCreditsRe
   })
 
   if (error) {
-    console.error('Failed to add credits:', error)
+    logger.error('Failed to add credits', { error, userId, amount, type })
     throw new Error(`Failed to add credits: ${error.message}`)
   }
 
@@ -89,7 +90,7 @@ export async function getBalance(userId: string): Promise<CreditBalance | null> 
     .single()
 
   if (error) {
-    console.error('Failed to get credit balance:', error)
+    logger.error('Failed to get credit balance', { error, userId })
     return null
   }
 
@@ -124,7 +125,7 @@ export async function getTransactions(
   const { data, error } = await query
 
   if (error) {
-    console.error('Failed to get transactions:', error)
+    logger.error('Failed to get transactions', { error, userId })
     return []
   }
 
@@ -144,7 +145,7 @@ export async function getRecentTransactions(limit: number = 10): Promise<CreditT
     .limit(limit)
 
   if (error) {
-    console.error('Failed to get recent transactions:', error)
+    logger.error('Failed to get recent transactions', { error, limit })
     return []
   }
 
@@ -174,7 +175,7 @@ export async function checkAndAwardMilestones(userId: string): Promise<{
   })
 
   if (error) {
-    console.error('Failed to check milestones:', error)
+    logger.error('Failed to check milestones', { error, userId })
     return { milestones_awarded: [], count: 0 }
   }
 
@@ -201,7 +202,7 @@ export async function getTopEarners(limit: number = 10): Promise<
     .limit(limit)
 
   if (error) {
-    console.error('Failed to get top earners:', error)
+    logger.error('Failed to get top earners', { error, limit })
     return []
   }
 
@@ -235,7 +236,7 @@ export async function getUserStats(userId: string): Promise<{
     .single()
 
   if (error) {
-    console.error('Failed to get user stats:', error)
+    logger.error('Failed to get user stats', { error, userId })
     return null
   }
 
@@ -329,7 +330,7 @@ export async function getUserMilestones(userId: string): Promise<
     .order('achieved_at', { ascending: false })
 
   if (error) {
-    console.error('Failed to get user milestones:', error)
+    logger.error('Failed to get user milestones', { error, userId })
     return []
   }
 
@@ -393,7 +394,7 @@ export async function tipUser(params: {
 
     return { success: true }
   } catch (error) {
-    console.error('Failed to tip user:', error)
+    logger.error('Failed to tip user', { error, fromUserId, toUserId, amount })
     return { success: false, error: 'Failed to process tip' }
   }
 }

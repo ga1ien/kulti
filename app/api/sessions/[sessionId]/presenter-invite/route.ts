@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { notifyPresenterInvited } from '@/lib/notifications/service'
+import { logger } from '@/lib/logger'
 
 /**
  * GET - Get current presenter invite status
@@ -56,7 +57,7 @@ export async function GET(
         : null,
     })
   } catch (error) {
-    console.error('Get presenter invite error:', error)
+    logger.error('Get presenter invite error', { error })
     return NextResponse.json(
       { error: 'Failed to get presenter invite' },
       { status: 500 }
@@ -94,7 +95,7 @@ export async function POST(
     )
 
     if (error) {
-      console.error('Generate token error:', error)
+      logger.error('Generate token error', { error, sessionId })
       if (error.message.includes('Only host')) {
         return NextResponse.json(
           { error: 'Only host can generate invite' },
@@ -141,7 +142,7 @@ export async function POST(
           )
         }
       } catch (notifError) {
-        console.error('Failed to send presenter invite notification:', notifError)
+        logger.error('Failed to send presenter invite notification', { error: notifError, sessionId, inviteEmail })
         // Don't fail the request if notification fails
       }
     }
@@ -152,7 +153,7 @@ export async function POST(
       success: true,
     })
   } catch (error) {
-    console.error('Generate presenter invite error:', error)
+    logger.error('Generate presenter invite error', { error })
     return NextResponse.json(
       { error: 'Failed to generate presenter invite' },
       { status: 500 }
@@ -188,7 +189,7 @@ export async function DELETE(
     )
 
     if (error) {
-      console.error('Revoke token error:', error)
+      logger.error('Revoke token error', { error, sessionId })
       if (error.message.includes('Only host')) {
         return NextResponse.json(
           { error: 'Only host can revoke invite' },
@@ -206,7 +207,7 @@ export async function DELETE(
       revoked: success,
     })
   } catch (error) {
-    console.error('Revoke presenter invite error:', error)
+    logger.error('Revoke presenter invite error', { error })
     return NextResponse.json(
       { error: 'Failed to revoke presenter invite' },
       { status: 500 }

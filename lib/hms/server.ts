@@ -1,4 +1,5 @@
 import * as jwt from "jsonwebtoken"
+import { logger } from "@/lib/logger"
 
 const HMS_APP_ACCESS_KEY = process.env.HMS_APP_ACCESS_KEY!
 const HMS_APP_SECRET = process.env.HMS_APP_SECRET!
@@ -47,14 +48,14 @@ export async function createHMSRoom(name: string, description?: string) {
 
     if (!response.ok) {
       const error = await response.text()
-      console.error("HMS create room error:", error)
+      logger.error("HMS create room error", { error, name })
       throw new Error("Failed to create HMS room")
     }
 
     const data = await response.json()
     return data.id
   } catch (error) {
-    console.error("Error creating HMS room:", error)
+    logger.error("Error creating HMS room", { error, name })
     throw error
   }
 }
@@ -145,7 +146,7 @@ export async function endHMSRoom(roomId: string) {
 
     return true
   } catch (error) {
-    console.error("Error ending HMS room:", error)
+    logger.error("Error ending HMS room", { error, roomId })
     throw error
   }
 }
@@ -165,7 +166,7 @@ export async function createStreamKey(roomId: string) {
 
     if (!response.ok) {
       const error = await response.text()
-      console.error("HMS create stream key error:", error)
+      logger.error("HMS create stream key error", { error, roomId })
       throw new Error("Failed to create stream key")
     }
 
@@ -176,7 +177,7 @@ export async function createStreamKey(roomId: string) {
       rtmpUrl: data.rtmp_ingest_url || "rtmp://ingest.100ms.live/live",
     }
   } catch (error) {
-    console.error("Error creating stream key:", error)
+    logger.error("Error creating stream key", { error, roomId })
     throw error
   }
 }
@@ -199,7 +200,7 @@ export async function getStreamKey(roomId: string) {
         return null
       }
       const error = await response.text()
-      console.error("HMS get stream key error:", error)
+      logger.error("HMS get stream key error", { error, roomId })
       throw new Error("Failed to get stream key")
     }
 
@@ -211,7 +212,7 @@ export async function getStreamKey(roomId: string) {
       active: data.enabled,
     }
   } catch (error) {
-    console.error("Error getting stream key:", error)
+    logger.error("Error getting stream key", { error, roomId })
     throw error
   }
 }
@@ -235,7 +236,7 @@ export async function disableStreamKey(streamKeyId: string) {
 
     return true
   } catch (error) {
-    console.error("Error disabling stream key:", error)
+    logger.error("Error disabling stream key", { error, streamKeyId })
     throw error
   }
 }
@@ -263,7 +264,7 @@ export async function startRecording(roomId: string) {
 
     if (!response.ok) {
       const error = await response.text()
-      console.error("HMS start recording error:", error)
+      logger.error("HMS start recording error", { error, roomId })
       throw new Error("Failed to start recording")
     }
 
@@ -273,7 +274,7 @@ export async function startRecording(roomId: string) {
       status: data.status,
     }
   } catch (error) {
-    console.error("Error starting recording:", error)
+    logger.error("Error starting recording", { error, roomId })
     throw error
   }
 }
@@ -293,7 +294,7 @@ export async function stopRecording(roomId: string) {
 
     if (!response.ok) {
       const error = await response.text()
-      console.error("HMS stop recording error:", error)
+      logger.error("HMS stop recording error", { error, roomId })
       throw new Error("Failed to stop recording")
     }
 
@@ -303,7 +304,7 @@ export async function stopRecording(roomId: string) {
       status: data.status,
     }
   } catch (error) {
-    console.error("Error stopping recording:", error)
+    logger.error("Error stopping recording", { error, roomId })
     throw error
   }
 }
@@ -326,7 +327,7 @@ export async function getRecordingStatus(roomId: string) {
         return null
       }
       const error = await response.text()
-      console.error("HMS get recording status error:", error)
+      logger.error("HMS get recording status error", { error, roomId })
       throw new Error("Failed to get recording status")
     }
 
@@ -338,7 +339,7 @@ export async function getRecordingStatus(roomId: string) {
       duration: data.duration,
     }
   } catch (error) {
-    console.error("Error getting recording status:", error)
+    logger.error("Error getting recording status", { error, roomId })
     throw error
   }
 }

@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     )
 
     if (guestError) {
-      console.error('Add guest presenter error:', guestError)
+      logger.error('Add guest presenter error', { error: guestError, token })
       if (guestError.message.includes('already in use')) {
         return NextResponse.json(
           { error: 'This display name is already in use. Please choose another.' },
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     )
 
     if (!hmsResponse.ok) {
-      console.error('HMS token generation failed for guest')
+      logger.error('HMS token generation failed for guest', { guestId, sessionId: session.session_id })
       return NextResponse.json(
         { error: 'Failed to generate video token' },
         { status: 500 }
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
       displayName: trimmedName,
     })
   } catch (error) {
-    console.error('Join as presenter error:', error)
+    logger.error('Join as presenter error', { error })
     return NextResponse.json(
       { error: 'Failed to join as presenter' },
       { status: 500 }
@@ -152,7 +153,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Validate presenter token error:', error)
+    logger.error('Validate presenter token error', { error })
     return NextResponse.json(
       { error: 'Failed to validate token' },
       { status: 500 }

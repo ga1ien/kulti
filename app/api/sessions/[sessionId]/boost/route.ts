@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { deductCredits, hasSufficientBalance } from '@/lib/credits/service'
 import { FEATURE_COSTS } from '@/lib/credits/config'
+import { logger } from '@/lib/logger'
 
 export async function POST(
   request: NextRequest,
@@ -104,7 +105,7 @@ export async function POST(
       .eq('id', sessionId)
 
     if (updateError) {
-      console.error('Failed to update session boost:', updateError)
+      logger.error('Failed to update session boost', { error: updateError, sessionId })
       return NextResponse.json(
         { error: 'Failed to boost session' },
         { status: 500 }
@@ -118,7 +119,7 @@ export async function POST(
       new_balance: deductResult.new_balance,
     })
   } catch (error) {
-    console.error('Boost session error:', error)
+    logger.error('Boost session error', { error })
     return NextResponse.json(
       {
         error: 'Failed to boost session',

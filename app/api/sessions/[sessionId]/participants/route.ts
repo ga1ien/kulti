@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
@@ -54,7 +55,7 @@ export async function GET(
       .order('joined_at', { ascending: true })
 
     if (participantsError) {
-      console.error('Failed to fetch participants:', participantsError)
+      logger.error('Failed to fetch participants', { error: participantsError, sessionId })
       return NextResponse.json(
         { error: 'Failed to fetch participants' },
         { status: 500 }
@@ -78,7 +79,7 @@ export async function GET(
       participants: formattedParticipants,
     })
   } catch (error) {
-    console.error('Session participants API error:', error)
+    logger.error('Session participants API error', { error })
     return NextResponse.json(
       { error: 'Failed to fetch participants' },
       { status: 500 }

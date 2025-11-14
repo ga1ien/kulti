@@ -29,13 +29,13 @@ export async function getAIPermissions(
     )
 
     if (!response.ok) {
-      console.error('Failed to fetch AI permissions')
+      // Don't log - this is a client-side function, errors handled by caller
       return null
     }
 
     return await response.json()
   } catch (error) {
-    console.error('Error fetching AI permissions:', error)
+    // Don't log - this is a client-side function, errors handled by caller
     return null
   }
 }
@@ -68,7 +68,7 @@ export async function updateAIModule(
 
     return { success: true }
   } catch (error) {
-    console.error('Error updating AI module:', error)
+    // Don't log - this is a client-side function, errors handled by caller
     return { success: false, error: 'Failed to update AI module' }
   }
 }
