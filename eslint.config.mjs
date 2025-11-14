@@ -34,7 +34,26 @@ export default [
         argsIgnorePattern: "^_",
         varsIgnorePattern: "^_"
       }],
+      "no-unused-vars": ["error", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_"
+      }],
       "no-undef": "off" // TypeScript handles this
+    }
+  },
+  {
+    // k6 load test files
+    files: ["tests/load/**/*.js"],
+    languageOptions: {
+      globals: {
+        __ENV: "readonly",
+        __VU: "readonly",
+        __ITER: "readonly",
+        console: "readonly"
+      }
+    },
+    rules: {
+      "no-console": "off" // Allow console in k6 tests
     }
   }
 ];

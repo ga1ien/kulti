@@ -39,7 +39,7 @@ jest.mock('@/lib/supabase/client', () => ({
 
 // Mock HMS SDK
 jest.mock('@100mslive/react-sdk', () => ({
-  HMSRoomProvider: ({ children }: { children: React.ReactNode }) => children,
+  HMSRoomProvider: ({ children }) => children,
   useHMSActions: () => ({
     join: jest.fn(),
     leave: jest.fn(),

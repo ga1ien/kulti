@@ -5,8 +5,6 @@
 import {
   formatDate,
   formatTime,
-  formatDateTime,
-  formatRelativeTime,
   formatDuration,
   formatNumber,
   formatCredits,

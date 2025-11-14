@@ -11,7 +11,7 @@ export interface AuthFixture {
 }
 
 export const test = base.extend<AuthFixture>({
-  testUser: async ({}, use) => {
+  testUser: async ({ page: _page }, use) => {
     const user = await createTestUser({
       phone: `+1555${Date.now().toString().slice(-7)}`,
       full_name: 'E2E Test User',
@@ -25,7 +25,7 @@ export const test = base.extend<AuthFixture>({
     await cleanupTestData([user.id]);
   },
 
-  adminUser: async ({}, use) => {
+  adminUser: async ({ page: _page }, use) => {
     const user = await createTestUser({
       phone: `+1556${Date.now().toString().slice(-7)}`,
       full_name: 'E2E Admin User',
@@ -39,7 +39,7 @@ export const test = base.extend<AuthFixture>({
     await cleanupTestData([user.id]);
   },
 
-  hostUser: async ({}, use) => {
+  hostUser: async ({ page: _page }, use) => {
     const user = await createTestUser({
       phone: `+1557${Date.now().toString().slice(-7)}`,
       full_name: 'E2E Host User',
