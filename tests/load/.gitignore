@@ -1,0 +1,15 @@
+# k6 test results
+results/*.json
+results/*.html
+results/*.xml
+
+# Environment variables
+.env
+.env.local
+
+# Test output
+*.log
+
+# Temporary files
+*.tmp
+.DS_Store

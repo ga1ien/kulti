@@ -8,7 +8,14 @@ const config = {
   },
   testMatch: [
     '**/__tests__/**/*.test.[jt]s?(x)',
-    '**/?(*.)+(spec|test).[jt]s?(x)',
+    '!**/tests/e2e/**',
+    '!**/tests/integration/**',
+  ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/tests/e2e/',
+    '/tests/integration/',
+    '/.next/',
   ],
   collectCoverageFrom: [
     'lib/**/*.{js,jsx,ts,tsx}',

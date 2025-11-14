@@ -84,7 +84,12 @@
       "Bash(done)",
       "Bash(npm run lint:fix:*)",
       "Bash(./migrate-console-logs.sh)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(brew install:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(k6 version:*)",
+      "Bash(npm run test:*)",
+      "Bash(npx playwright test:*)"
     ],
     "deny": [],
     "ask": []

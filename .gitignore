@@ -5,6 +5,10 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
+/.nyc_output
+/screenshots
 
 # next.js
 /.next/
