@@ -343,3 +343,280 @@ export async function getRecordingStatus(roomId: string) {
     throw error
   }
 }
+
+/**
+ * HLS Room Details Interface
+ */
+export interface HMSRoomDetails {
+  id: string
+  name: string
+  enabled: boolean
+  description?: string
+  customer_id: string
+  recording_info?: {
+    enabled: boolean
+  }
+  max_duration?: number
+  created_at: string
+  template_id?: string
+  template?: string
+  region?: string
+  peers?: Array<{
+    id: string
+    name: string
+    role: string
+    user_id: string
+  }>
+  peer_count?: number
+}
+
+/**
+ * HLS Stream Status Interface
+ */
+export interface HLSStreamStatus {
+  id?: string
+  room_id: string
+  session_id?: string
+  status: "starting" | "running" | "stopping" | "stopped" | "post_processing"
+  stream_url?: string
+  playback_url?: string
+  started_at?: string
+  stopped_at?: string
+  recording?: {
+    hls_vod?: boolean
+    single_file_per_layer?: boolean
+  }
+}
+
+/**
+ * HLS Stream Start Response Interface
+ */
+export interface HLSStreamStartResponse {
+  id: string
+  room_id: string
+  session_id: string
+  status: string
+  meeting_url?: string
+  destination?: string
+  recording?: {
+    hls_vod: boolean
+  }
+}
+
+/**
+ * Get detailed information about an HMS room including active peer count
+ *
+ * @param roomId - The HMS room ID
+ * @returns Room details including peer_count for HLS threshold decisions
+ */
+export async function getRoomDetails(roomId: string): Promise<HMSRoomDetails> {
+  try {
+    const response = await fetch(
+      `https://api.100ms.live/v2/rooms/${roomId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HMS_APP_ACCESS_KEY}:${HMS_APP_SECRET}`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      const error = await response.text()
+      logger.error("HMS get room details error", { error, roomId, status: response.status })
+      throw new Error(`Failed to get room details: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    // Calculate peer count from peers array if available
+    const peerCount = data.peers ? data.peers.length : 0
+
+    return {
+      id: data.id,
+      name: data.name,
+      enabled: data.enabled,
+      description: data.description,
+      customer_id: data.customer_id,
+      recording_info: data.recording_info,
+      max_duration: data.max_duration,
+      created_at: data.created_at,
+      template_id: data.template_id,
+      template: data.template,
+      region: data.region,
+      peers: data.peers,
+      peer_count: peerCount,
+    }
+  } catch (error) {
+    logger.error("Error getting room details", { error, roomId })
+    throw error
+  }
+}
+
+/**
+ * Check if HLS stream is currently running for a room
+ *
+ * @param roomId - The HMS room ID
+ * @returns Stream status object or null if no stream exists
+ */
+export async function getHLSStreamStatus(roomId: string): Promise<HLSStreamStatus | null> {
+  try {
+    const response = await fetch(
+      `https://api.100ms.live/v2/live-streams/room/${roomId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HMS_APP_ACCESS_KEY}:${HMS_APP_SECRET}`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        // No active stream found
+        return null
+      }
+      const error = await response.text()
+      logger.error("HMS get HLS stream status error", { error, roomId, status: response.status })
+      throw new Error(`Failed to get HLS stream status: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    // HMS returns an array of streams, get the first active one
+    const streams = Array.isArray(data) ? data : [data]
+    const activeStream = streams.find(
+      (stream: HLSStreamStatus) => stream.status === "running" || stream.status === "starting"
+    )
+
+    if (!activeStream) {
+      return null
+    }
+
+    return {
+      id: activeStream.id,
+      room_id: activeStream.room_id,
+      session_id: activeStream.session_id,
+      status: activeStream.status,
+      stream_url: activeStream.playback_url || activeStream.stream_url,
+      playback_url: activeStream.playback_url,
+      started_at: activeStream.started_at,
+      stopped_at: activeStream.stopped_at,
+      recording: activeStream.recording,
+    }
+  } catch (error) {
+    logger.error("Error getting HLS stream status", { error, roomId })
+    throw error
+  }
+}
+
+/**
+ * Start HLS streaming for a room
+ * Automatically enables HLS recording for VOD playback
+ *
+ * @param roomId - The HMS room ID
+ * @param meetingUrl - Optional meeting URL for composite recording
+ * @returns Stream details including playback URL
+ */
+export async function startHLSStream(
+  roomId: string,
+  meetingUrl?: string
+): Promise<HLSStreamStatus> {
+  try {
+    // Check if HLS is already running
+    const existingStream = await getHLSStreamStatus(roomId)
+    if (existingStream && (existingStream.status === "running" || existingStream.status === "starting")) {
+      logger.info("HLS stream already running", { roomId, streamId: existingStream.id })
+      return existingStream
+    }
+
+    const response = await fetch(
+      `https://api.100ms.live/v2/live-streams/room/${roomId}/start`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HMS_APP_ACCESS_KEY}:${HMS_APP_SECRET}`,
+        },
+        body: JSON.stringify({
+          meeting_url: meetingUrl || `${process.env.NEXT_PUBLIC_APP_URL}/session/${roomId}`,
+          recording: {
+            hls_vod: true, // Enable HLS VOD recording
+            single_file_per_layer: false, // Single master playlist
+          },
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      const error = await response.text()
+      logger.error("HMS start HLS stream error", {
+        error,
+        roomId,
+        status: response.status,
+        meetingUrl
+      })
+      throw new Error(`Failed to start HLS stream: ${response.status}`)
+    }
+
+    const data: HLSStreamStartResponse = await response.json()
+
+    logger.info("HLS stream started successfully", {
+      roomId,
+      streamId: data.id,
+      sessionId: data.session_id
+    })
+
+    return {
+      id: data.id,
+      room_id: data.room_id,
+      session_id: data.session_id,
+      status: data.status as HLSStreamStatus["status"],
+      recording: data.recording,
+    }
+  } catch (error) {
+    logger.error("Error starting HLS stream", { error, roomId, meetingUrl })
+    throw error
+  }
+}
+
+/**
+ * Stop HLS streaming for a room
+ *
+ * @param roomId - The HMS room ID
+ * @returns Stream stop confirmation
+ */
+export async function stopHLSStream(roomId: string): Promise<{ id: string; status: string }> {
+  try {
+    const response = await fetch(
+      `https://api.100ms.live/v2/live-streams/room/${roomId}/stop`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HMS_APP_ACCESS_KEY}:${HMS_APP_SECRET}`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      const error = await response.text()
+      logger.error("HMS stop HLS stream error", { error, roomId, status: response.status })
+      throw new Error(`Failed to stop HLS stream: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    logger.info("HLS stream stopped successfully", { roomId, streamId: data.id })
+
+    return {
+      id: data.id,
+      status: data.status,
+    }
+  } catch (error) {
+    logger.error("Error stopping HLS stream", { error, roomId })
+    throw error
+  }
+}

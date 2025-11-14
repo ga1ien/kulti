@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { generateHMSToken } from "@/lib/hms/server"
+import { generateHMSToken, getRoomDetails, getHLSStreamStatus, startHLSStream } from "@/lib/hms/server"
 import { logger } from "@/lib/logger"
 
-const HLS_THRESHOLD = 100 // Switch to HLS when more than 100 viewers
+/**
+ * HLS Threshold Configuration
+ * When a session has more than this many participants, new viewers will use HLS instead of WebRTC
+ * This allows sessions to scale to 1000+ viewers while maintaining performance
+ *
+ * Default: 100 participants
+ * Can be overridden via HLS_THRESHOLD environment variable
+ */
+const HLS_THRESHOLD = parseInt(process.env.HLS_THRESHOLD || "100", 10)
 
 export async function POST(request: NextRequest) {
   try {
@@ -127,32 +135,71 @@ export async function POST(request: NextRequest) {
     let hlsStreamUrl: string | null = null
 
     // Only viewers can use HLS (hosts and presenters need WebRTC for interaction)
-    // TODO: Implement HLS switching for high participant counts
-    if (role === "viewer" && false) { // Disabled until HLS functions are implemented
+    if (role === "viewer") {
       try {
         // Get room details to check participant count
-        // const roomDetails = await getRoomDetails(roomId)
+        const roomDetails = await getRoomDetails(roomId)
+
+        logger.info("Checking HLS eligibility", {
+          roomId,
+          peerCount: roomDetails.peer_count,
+          threshold: HLS_THRESHOLD,
+          role
+        })
 
         // If room has more than HLS_THRESHOLD participants, use HLS for viewers
-        if (false) { // Disabled
+        if (roomDetails.peer_count && roomDetails.peer_count >= HLS_THRESHOLD) {
           // Check if HLS stream is running
-          // let hlsStatus = await getHLSStreamStatus(roomId)
+          let hlsStatus = await getHLSStreamStatus(roomId)
 
           // If HLS not started yet, start it
-          if (false) { // Disabled
+          if (!hlsStatus || hlsStatus.status === "stopped") {
             try {
-              // const hlsStream = await startHLSStream(roomId)
-              // hlsStreamUrl = hlsStream.stream_url
+              logger.info("Starting HLS stream for high participant count", {
+                roomId,
+                peerCount: roomDetails.peer_count,
+                threshold: HLS_THRESHOLD
+              })
+
+              const hlsStream = await startHLSStream(roomId)
+              hlsStreamUrl = hlsStream.stream_url || hlsStream.playback_url || null
+
+              // Wait for stream to become available (poll status)
+              if (!hlsStreamUrl) {
+                // Give it a moment to start
+                await new Promise(resolve => setTimeout(resolve, 2000))
+                hlsStatus = await getHLSStreamStatus(roomId)
+                hlsStreamUrl = hlsStatus?.stream_url || hlsStatus?.playback_url || null
+              }
+
               useHLS = true
+              logger.info("HLS stream started successfully", {
+                roomId,
+                streamId: hlsStream.id,
+                hasUrl: !!hlsStreamUrl
+              })
             } catch (error) {
               logger.error("Failed to start HLS stream", { error, roomId })
               // Fall back to WebRTC if HLS fails
               useHLS = false
             }
           } else {
-            // hlsStreamUrl = hlsStatus.stream_url
+            // HLS stream already running, use it
+            hlsStreamUrl = hlsStatus.stream_url || hlsStatus.playback_url || null
             useHLS = true
+            logger.info("Using existing HLS stream", {
+              roomId,
+              streamId: hlsStatus.id,
+              status: hlsStatus.status,
+              hasUrl: !!hlsStreamUrl
+            })
           }
+        } else {
+          logger.info("Participant count below HLS threshold, using WebRTC", {
+            roomId,
+            peerCount: roomDetails.peer_count,
+            threshold: HLS_THRESHOLD
+          })
         }
       } catch (error) {
         logger.error("Error checking HLS eligibility", { error, roomId, role })
