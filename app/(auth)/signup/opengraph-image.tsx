@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export const runtime = 'edge'
 export const alt = 'Join Kulti'
@@ -32,7 +33,7 @@ export default async function Image({ searchParams }: { searchParams: Promise<{ 
         inviterName = creator.display_name
       }
     } catch (error) {
-      console.error('Failed to fetch inviter name:', error)
+      logger.error('Failed to fetch inviter name:', error)
     }
   }
 

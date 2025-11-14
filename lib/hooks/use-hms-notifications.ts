@@ -32,7 +32,7 @@ export function useHMSNotificationHandler() {
 
       case HMSNotificationTypes.ERROR:
         const error = notification.data
-        console.error('HMS Error:', error)
+        logger.error('HMS Error', { error })
 
         // Provide user-friendly error messages
         if (error.code === 3001) {

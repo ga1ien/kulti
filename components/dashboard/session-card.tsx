@@ -7,6 +7,7 @@ import { Users, Clock, Star, TrendingUp } from "lucide-react"
 import { formatTime } from "@/lib/utils"
 import { BoostSessionModal } from "@/components/session/boost-session-modal"
 import { createClient } from "@/lib/supabase/client"
+import { logger } from '@/lib/logger'
 
 interface SessionCardProps {
   session: Session & {
@@ -39,7 +40,7 @@ export function SessionCard({ session, currentUserId }: SessionCardProps) {
         setCurrentBalance(data.credits_balance || 0)
       }
     } catch (error) {
-      console.error('Failed to fetch balance:', error)
+      logger.error('Failed to fetch balance:', error)
     }
   }
 

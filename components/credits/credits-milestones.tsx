@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Trophy, Star, Target } from "lucide-react"
 import { formatCredits } from "@/lib/credits/config"
+import { logger } from '@/lib/logger'
 
 interface CreditsMilestonesProps {
   userId: string
@@ -128,7 +129,7 @@ export function CreditsMilestones({ userId }: CreditsMilestonesProps) {
           setStats(data.stats)
         }
       } catch (error) {
-        console.error("Failed to fetch milestones:", error)
+        logger.error("Failed to fetch milestones:", error)
       } finally {
         setLoading(false)
       }

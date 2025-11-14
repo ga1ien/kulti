@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Users, TrendingUp, Calendar } from 'lucide-react'
 import { StatsCard } from '@/components/admin/stats-card'
 import type { InviteStats } from '@/types/database'
+import { logger } from '@/lib/logger'
 
 export default function InviteDetailsPage() {
   const params = useParams()
@@ -26,7 +27,7 @@ export default function InviteDetailsPage() {
         router.push('/admin/invites')
       }
     } catch (error) {
-      console.error('Failed to fetch invite details:', error)
+      logger.error('Failed to fetch invite details', { error, inviteId: params.id })
     } finally {
       setLoading(false)
     }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Sparkles, X } from "lucide-react"
+import { logger } from '@/lib/logger'
 
 interface FeatureIntroModalProps {
   featureName: string
@@ -39,7 +40,7 @@ export const FeatureIntroModal = ({
       try {
         localStorage.setItem(`feature-intro-${featureName}`, "seen")
       } catch (error) {
-        console.error("Failed to save feature intro preference:", error)
+        logger.error("Failed to save feature intro preference:", error)
       }
     }
     onClose()

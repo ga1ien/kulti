@@ -16,6 +16,7 @@ import {
 import { formatDistanceToNow } from "date-fns"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { logger } from '@/lib/logger'
 
 interface TopicDetailModalProps {
   isOpen: boolean
@@ -74,7 +75,7 @@ export function TopicDetailModal({
       const response = await getTopicComments(topicId)
       setComments(response.comments)
     } catch (error) {
-      console.error("Failed to load comments:", error)
+      logger.error("Failed to load comments:", error)
       setError("Failed to load comments")
     } finally {
       setIsLoadingComments(false)
@@ -92,7 +93,7 @@ export function TopicDetailModal({
       setLocalHasVoted(result.upvoted)
       onTopicUpdated?.()
     } catch (error) {
-      console.error("Failed to vote:", error)
+      logger.error("Failed to vote:", error)
       setError("Failed to vote. Please try again.")
     } finally {
       setIsVoting(false)
@@ -114,7 +115,7 @@ export function TopicDetailModal({
       setNewComment("")
       onTopicUpdated?.()
     } catch (error) {
-      console.error("Failed to submit comment:", error)
+      logger.error("Failed to submit comment:", error)
       setError("Failed to submit comment. Please try again.")
     } finally {
       setIsSubmittingComment(false)
@@ -138,7 +139,7 @@ export function TopicDetailModal({
       const result = await streamTopic(topicId)
       router.push(`/session/${result.roomCode}`)
     } catch (error) {
-      console.error("Failed to create stream:", error)
+      logger.error("Failed to create stream:", error)
       setError("Failed to create stream. Please try again.")
     } finally {
       setIsStreaming(false)

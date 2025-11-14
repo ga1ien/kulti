@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react"
 import { X, Send, ThumbsUp, Loader2 } from "lucide-react"
 import { formatTime } from "@/lib/utils"
+import { logger } from '@/lib/logger'
 
 interface MessageThreadModalProps {
   isOpen: boolean
@@ -67,7 +68,7 @@ export function MessageThreadModal({
         setError('Failed to load thread')
       }
     } catch (error) {
-      console.error('Fetch thread error:', error)
+      logger.error('Fetch thread error:', error)
       setError('Failed to load thread')
     } finally {
       setLoading(false)
@@ -98,7 +99,7 @@ export function MessageThreadModal({
         setError('Failed to send reply')
       }
     } catch (error) {
-      console.error('Send reply error:', error)
+      logger.error('Send reply error:', error)
       setError('Failed to send reply')
     } finally {
       setSending(false)
@@ -112,7 +113,7 @@ export function MessageThreadModal({
       })
       fetchThread() // Refresh to show updated counts
     } catch (error) {
-      console.error('Upvote error:', error)
+      logger.error('Upvote error:', error)
     }
   }
 

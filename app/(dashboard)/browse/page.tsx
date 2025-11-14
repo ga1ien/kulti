@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { BrowseContent } from "@/components/browse/browse-content"
+import { logger } from '@/lib/logger'
 
 export default async function BrowsePage() {
   const supabase = await createClient()
@@ -39,7 +40,7 @@ export default async function BrowsePage() {
 
   // Handle errors gracefully
   if (error) {
-    console.error("Failed to fetch sessions:", error)
+    logger.error("Failed to fetch sessions:", error)
   }
 
   return (

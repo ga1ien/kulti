@@ -17,6 +17,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { TopicCreationModal } from "./topic-creation-modal"
 import { TopicDetailModal } from "./topic-detail-modal"
+import { logger } from '@/lib/logger'
 
 interface TopicFeedProps {
   roomId: string
@@ -185,7 +186,7 @@ function TopicCard({ topic, currentUserId, isHost, onClick }: TopicCardProps) {
       setVotes(result.newCount)
       setHasVoted(result.upvoted)
     } catch (error) {
-      console.error("Failed to vote:", error)
+      logger.error("Failed to vote:", error)
       alert("Failed to vote. Please try again.")
     } finally {
       setIsVoting(false)
@@ -208,7 +209,7 @@ function TopicCard({ topic, currentUserId, isHost, onClick }: TopicCardProps) {
       // Redirect to the new session
       router.push(`/session/${result.roomCode}`)
     } catch (error) {
-      console.error("Failed to create stream:", error)
+      logger.error("Failed to create stream:", error)
       alert("Failed to create stream. Please try again.")
     } finally {
       setIsStreaming(false)

@@ -1,10 +1,10 @@
 import { Coins, Video, Eye, Trophy } from "lucide-react"
-import { Profile } from "@/types/database"
+import { Profile, UserProfileStats } from "@/types/database"
 import { formatCredits } from "@/lib/credits/config"
 
 interface ProfileStatsProps {
   profile: Profile
-  stats: any
+  stats: UserProfileStats | null
 }
 
 export function ProfileStats({ profile, stats }: ProfileStatsProps) {

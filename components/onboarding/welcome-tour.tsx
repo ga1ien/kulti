@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Joyride, { CallBackProps, STATUS, Step } from "react-joyride"
 import { Ticket } from "lucide-react"
 import { useOnboarding } from "@/contexts/onboarding-context"
+import { logger } from '@/lib/logger'
 
 export const WelcomeTour = () => {
   const { shouldShowTour, markStepComplete } = useOnboarding()
@@ -14,7 +15,7 @@ export const WelcomeTour = () => {
 
   useEffect(() => {
     if (shouldShow) {
-      console.log('[WelcomeTour] Starting tour in 1 second...')
+      logger.info('[WelcomeTour] Starting tour in 1 second...')
       const timer = setTimeout(() => {
         setRun(true)
       }, 1000)

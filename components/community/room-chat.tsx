@@ -6,6 +6,7 @@ import { MessageWithReactions, MessageThread } from "@/lib/community/types"
 import { sendMessage, reactToMessage, getMessageThread } from "@/lib/community"
 import { formatDistanceToNow } from "date-fns"
 import Image from "next/image"
+import { logger } from '@/lib/logger'
 
 interface RoomChatProps {
   roomId: string
@@ -57,7 +58,7 @@ export function RoomChat({
       setMessageText("")
       setReplyingTo(null)
     } catch (error) {
-      console.error("Failed to send message:", error)
+      logger.error("Failed to send message:", error)
       alert("Failed to send message. Please try again.")
     } finally {
       setIsSending(false)
@@ -172,7 +173,7 @@ function MessageItem({
       await reactToMessage(roomId, message.id, emoji)
       setShowEmojiPicker(false)
     } catch (error) {
-      console.error("Failed to react:", error)
+      logger.error("Failed to react:", error)
     }
   }
 
@@ -191,7 +192,7 @@ function MessageItem({
       setThread(loadedThread)
       setShowThread(true)
     } catch (error) {
-      console.error("Failed to load thread:", error)
+      logger.error("Failed to load thread:", error)
     } finally {
       setLoadingThread(false)
     }

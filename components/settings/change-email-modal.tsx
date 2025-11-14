@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { X, Mail } from "lucide-react"
+import { logger } from '@/lib/logger'
 
 interface ChangeEmailModalProps {
   isOpen: boolean
@@ -54,7 +55,7 @@ export const ChangeEmailModal = ({
         setError(data.error || "Failed to change email")
       }
     } catch (error) {
-      console.error("Email change error:", error)
+      logger.error("Email change error:", error)
       setError("An error occurred. Please try again.")
     } finally {
       setLoading(false)

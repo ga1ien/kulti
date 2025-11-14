@@ -10,6 +10,8 @@ import { usePresence } from "@/hooks/use-presence"
 import { useOnboarding } from "@/contexts/onboarding-context"
 import { Sparkles, Users } from "lucide-react"
 import { toast } from "react-hot-toast"
+import { SessionWithDetails } from "@/types/database"
+import { logger } from '@/lib/logger'
 
 // Code split heavy modals - only load when needed
 const CreateSessionModal = dynamic(
@@ -36,7 +38,7 @@ function DashboardContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { markStepComplete } = useOnboarding()
-  const [sessions, setSessions] = useState<any[]>([])
+  const [sessions, setSessions] = useState<SessionWithDetails[]>([])
   const [userId, setUserId] = useState<string>("")
   const [loading, setLoading] = useState(true)
   const [profileCompleted, setProfileCompleted] = useState(true)
@@ -123,7 +125,7 @@ function DashboardContent() {
     router.push("/dashboard")
   }
 
-  const handleProfileComplete = async (data: any) => {
+  const handleProfileComplete = async (data: { skills: string[]; interests: string[]; experienceLevel: string }) => {
     try {
       const response = await fetch('/api/profile/matchmaking', {
         method: 'PUT',
@@ -134,7 +136,7 @@ function DashboardContent() {
       if (response.ok) {
         // Mark profile setup as complete in onboarding context
         // This will trigger the welcome tour (Joyride) to show
-        console.log('[Dashboard] Marking profile setup as complete')
+        logger.info('[Dashboard] Marking profile setup as complete')
         markStepComplete('profileSetupCompleted')
 
         // Update local state
@@ -148,7 +150,7 @@ function DashboardContent() {
         toast.error("Failed to update profile. Please try again.")
       }
     } catch (error) {
-      console.error('Profile update error:', error)
+      logger.error('Profile update error:', error)
       toast.error("Failed to update profile. Please try again.")
     }
   }

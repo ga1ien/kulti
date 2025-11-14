@@ -7,6 +7,7 @@ import { ProfileBadges } from "@/components/profile/profile-badges"
 import { ProfileSessionHistory } from "@/components/profile/profile-session-history"
 import { MyInviteCodes } from "@/components/profile/my-invite-codes"
 import { ProfileScrollHandler } from "@/components/profile/profile-scroll-handler"
+import { SessionParticipantWithDetails } from "@/types/database"
 
 interface ProfilePageProps {
   params: Promise<{
@@ -50,6 +51,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .from("session_participants")
     .select(`
       session_id,
+      user_id,
       role,
       joined_at,
       credits_earned,
@@ -58,6 +60,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         id,
         title,
         description,
+        host_id,
         status,
         started_at,
         ended_at,
@@ -98,7 +101,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         {/* Session History */}
         <div className="mt-12">
           <ProfileSessionHistory
-            sessions={recentSessions || []}
+            sessions={(recentSessions as unknown as SessionParticipantWithDetails[]) || []}
             profileUsername={profile.username}
           />
         </div>

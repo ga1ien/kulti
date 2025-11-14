@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { logger } from '@/lib/logger'
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -12,7 +13,7 @@ interface ErrorProps {
 const ErrorPage = ({ error, reset }: ErrorProps) => {
   useEffect(() => {
     // Log error to error reporting service
-    console.error("Application error:", error);
+    logger.error("Application error:", error);
   }, [error]);
 
   const isDevelopment = process.env.NODE_ENV === "development";

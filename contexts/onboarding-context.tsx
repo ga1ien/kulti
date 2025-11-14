@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { logger } from '@/lib/logger'
 
 interface OnboardingProgress {
   welcomeTourCompleted: boolean
@@ -54,7 +55,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
         setProgress(parsedProgress)
         setIsNewUser(false)
       } catch (error) {
-        console.error('Failed to parse onboarding progress:', error)
+        logger.error('Failed to parse onboarding progress:', error)
         setIsNewUser(true)
       }
     } else {
@@ -64,7 +65,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
   const markStepComplete = (step: keyof OnboardingProgress) => {
     const newProgress = { ...progress, [step]: true }
-    console.log('[Onboarding] markStepComplete called:', step, 'new progress:', newProgress)
+    logger.info('[Onboarding] markStepComplete called:', step, 'new progress:', newProgress)
     setProgress(newProgress)
 
     // SSR safety check

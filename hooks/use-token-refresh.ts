@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useHMSActions, useHMSNotifications, HMSNotificationTypes } from "@100mslive/react-sdk"
 import { toast } from "react-hot-toast"
+import { logger } from '@/lib/logger'
 
 interface UseTokenRefreshOptions {
   isConnected?: boolean
@@ -62,7 +63,7 @@ export function useTokenRefresh({
           icon: '🔄',
         })
       } catch (error) {
-        console.error('Token refresh failed:', error)
+        logger.error('Token refresh failed:', error)
         toast.error('Failed to refresh session. Please rejoin if connection is lost.', {
           duration: 5000,
         })
@@ -134,7 +135,7 @@ export function useTokenRefresh({
               toast.success('Reconnected successfully', { icon: '✅' })
             }
           } catch (refreshError) {
-            console.error('Manual refresh failed:', refreshError)
+            logger.error('Manual refresh failed:', refreshError)
           }
         }
 

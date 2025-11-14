@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useCallback } from 'react'
+import { logger } from '@/lib/logger'
 
 interface UsePresenceOptions {
   enabled?: boolean
@@ -33,7 +34,7 @@ export function usePresence({
         }),
       })
     } catch (error) {
-      console.error('Failed to update presence:', error)
+      logger.error('Failed to update presence:', error)
     }
   }, [])
 

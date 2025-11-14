@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast"
 import { X, Heart, Coins } from "lucide-react"
 import { formatCredits } from "@/lib/credits/config"
 import { notifyCreditsSpent, notifyInsufficientCredits } from "@/lib/credits/notifications"
+import { logger } from "@/lib/logger"
 
 interface TipModalProps {
   isOpen: boolean
@@ -92,7 +93,7 @@ export function TipModal({
         }
       }
     } catch (error) {
-      console.error('Tip error:', error)
+      logger.error('Tip error', { error, recipientId, amount })
       toast.error('Failed to send tip. Please check your connection and try again.')
     } finally {
       setLoading(false)

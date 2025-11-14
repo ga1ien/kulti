@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton'
 import { Search } from 'lucide-react'
 import type { UserRole } from '@/lib/admin/permissions'
+import { logger } from '@/lib/logger'
 
 // Code split UserTable component
 const UserTable = dynamic(() => import('@/components/admin/user-table').then(mod => ({ default: mod.UserTable })), {
@@ -57,7 +58,7 @@ export default function UsersPage() {
         setFilteredUsers(data)
       }
     } catch (error) {
-      console.error('Failed to fetch users:', error)
+      logger.error('Failed to fetch users', { error })
     } finally {
       setLoading(false)
     }
@@ -116,7 +117,7 @@ export default function UsersPage() {
         alert('Failed to delete user')
       }
     } catch (error) {
-      console.error('Failed to delete user:', error)
+      logger.error('Failed to delete user', { error, userId })
       alert('Failed to delete user')
     }
   }
@@ -139,7 +140,7 @@ export default function UsersPage() {
         alert('Failed to update user role')
       }
     } catch (error) {
-      console.error('Failed to update user role:', error)
+      logger.error('Failed to update user role', { error, userId, newRole })
       alert('Failed to update user role')
     }
   }

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { RoomBrowser } from "@/components/community/room-browser"
+import { logger } from '@/lib/logger'
 
 export const metadata = {
   title: "Community Rooms | Kulti",
@@ -24,7 +25,7 @@ export default async function CommunityPage() {
   })
 
   if (error) {
-    console.error("Error fetching rooms:", error)
+    logger.error("Error fetching rooms:", error)
   }
 
   return (

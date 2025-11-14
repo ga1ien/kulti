@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send, ThumbsUp, Pin, MessageSquare, Filter } from "lucide-react"
 import { formatTime } from "@/lib/utils"
+import { logger } from '@/lib/logger'
 
 interface ChatSidebarProps {
   sessionId: string
@@ -122,7 +123,7 @@ export function ChatSidebar({ sessionId, userId, isHost }: ChatSidebarProps) {
 
       setNewMessage('')
     } catch (error) {
-      console.error('Send message error:', error)
+      logger.error('Send message error:', error)
       toast.error('Failed to send message. Please try again.')
     } finally {
       setIsSending(false)
@@ -140,7 +141,7 @@ export function ChatSidebar({ sessionId, userId, isHost }: ChatSidebarProps) {
       }
       // Refresh will happen via subscription
     } catch (error) {
-      console.error('Upvote error:', error)
+      logger.error('Upvote error:', error)
       toast.error('Failed to upvote message. Please try again.')
     }
   }
@@ -158,7 +159,7 @@ export function ChatSidebar({ sessionId, userId, isHost }: ChatSidebarProps) {
       }
       // Refresh will happen via subscription
     } catch (error) {
-      console.error('Pin error:', error)
+      logger.error('Pin error:', error)
       toast.error('Failed to pin message. Please try again.')
     }
   }

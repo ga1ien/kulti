@@ -5,6 +5,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 // Re-export badge info from constants
 export { BADGE_INFO } from './constants'
@@ -34,7 +35,7 @@ export async function awardBadge(userId: string, badgeId: string): Promise<Badge
   })
 
   if (error) {
-    console.error('Failed to award badge:', error)
+    logger.error('Failed to award badge:', error)
     return {
       success: false,
       badge_id: badgeId,
@@ -57,7 +58,7 @@ export async function checkAndAwardBadges(userId: string): Promise<CheckBadgesRe
   })
 
   if (error) {
-    console.error('Failed to check and award badges:', error)
+    logger.error('Failed to check and award badges:', error)
     return {
       success: false,
       badges_awarded: [],
@@ -81,7 +82,7 @@ export async function getUserBadges(userId: string): Promise<any[]> {
     .single()
 
   if (error) {
-    console.error('Failed to get user badges:', error)
+    logger.error('Failed to get user badges:', error)
     return []
   }
 

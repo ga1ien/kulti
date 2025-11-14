@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Settings, Wifi, Video, Gauge, Save } from "lucide-react"
 import { toast } from "react-hot-toast"
+import { logger } from '@/lib/logger'
 
 /**
  * Navigator with Connection API
@@ -86,7 +87,7 @@ export function QualitySettingsModal({ isOpen, onClose, onApply }: QualitySettin
         const parsed = JSON.parse(saved) as VideoQualitySettings
         setSettings(parsed)
       } catch (error) {
-        console.error("Failed to load quality settings:", error)
+        logger.error("Failed to load quality settings:", error)
       }
     }
   }, [])
@@ -387,7 +388,7 @@ export function getSavedQualitySettings(): VideoQualitySettings | null {
     try {
       return JSON.parse(saved) as VideoQualitySettings
     } catch (error) {
-      console.error("Failed to load quality settings:", error)
+      logger.error("Failed to load quality settings:", error)
       return null
     }
   }

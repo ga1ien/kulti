@@ -4,6 +4,7 @@ import { useState } from "react"
 import { X, Trash2, AlertTriangle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { logger } from '@/lib/logger'
 
 interface DeleteAccountModalProps {
   isOpen: boolean
@@ -49,7 +50,7 @@ export const DeleteAccountModal = ({
         setError(data.error || "Failed to delete account")
       }
     } catch (error) {
-      console.error("Account deletion error:", error)
+      logger.error("Account deletion error:", error)
       setError("An error occurred. Please try again.")
     } finally {
       setLoading(false)

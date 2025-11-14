@@ -14,6 +14,7 @@ import { Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, PictureInPicture, Sp
 import { BackgroundPicker } from "./background-picker"
 import { QualitySettingsModal } from "./quality-settings-modal"
 import { toast } from "react-hot-toast"
+import { logger } from "@/lib/logger"
 
 /**
  * HMS Audio Settings interface
@@ -117,7 +118,7 @@ export function Controls({
         }
       }
     } catch (error) {
-      console.error("PiP toggle error:", error)
+      logger.error("PiP toggle error", { error })
       toast.error("Failed to toggle Picture-in-Picture mode")
     }
   }, [isPipEnabled])
@@ -137,7 +138,7 @@ export function Controls({
           : "Music mode enabled - High quality audio active"
       )
     } catch (error) {
-      console.error("Failed to toggle music mode:", error)
+      logger.error("Failed to toggle music mode", { error })
       toast.error("Failed to toggle music mode")
     }
   }, [hmsActions, musicModeActive])
@@ -175,7 +176,7 @@ export function Controls({
         toast.success("Recording started")
       }
     } catch (error) {
-      console.error("Recording toggle error:", error)
+      logger.error("Recording toggle error", { error, isRecording })
       toast.error(isRecording ? "Failed to stop recording" : "Failed to start recording")
     } finally {
       setIsRecordingLoading(false)

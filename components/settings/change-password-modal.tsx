@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { X, Lock } from "lucide-react"
+import { logger } from '@/lib/logger'
 
 interface ChangePasswordModalProps {
   isOpen: boolean
@@ -62,7 +63,7 @@ export const ChangePasswordModal = ({
         setError(data.error || "Failed to change password")
       }
     } catch (error) {
-      console.error("Password change error:", error)
+      logger.error("Password change error:", error)
       setError("An error occurred. Please try again.")
     } finally {
       setLoading(false)

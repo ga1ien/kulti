@@ -1,4 +1,4 @@
-import { Star, Trophy, Award, Medal } from "lucide-react"
+import { Star, Trophy, Award, Medal, type LucideIcon } from "lucide-react"
 
 interface Badge {
   badge_id: string
@@ -9,7 +9,7 @@ interface ProfileBadgesProps {
   badges: Badge[]
 }
 
-const BADGE_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
+const BADGE_CONFIG: Record<string, { label: string; icon: LucideIcon; color: string }> = {
   first_stream: { label: "First Stream", icon: Star, color: "lime" },
   first_session: { label: "First Session", icon: Star, color: "lime" },
   sessions_10: { label: "10 Sessions", icon: Medal, color: "blue" },

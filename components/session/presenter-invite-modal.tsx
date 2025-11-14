@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { X, Link as LinkIcon, Copy, Check, RefreshCw, AlertCircle, Users } from "lucide-react"
+import { logger } from '@/lib/logger'
 
 interface PresenterInviteModalProps {
   isOpen: boolean
@@ -36,7 +37,7 @@ export function PresenterInviteModal({
         setIsRevoked(data.isRevoked)
       }
     } catch (error) {
-      console.error('Failed to fetch invite status:', error)
+      logger.error('Failed to fetch invite status:', error)
     }
   }
 
@@ -62,7 +63,7 @@ export function PresenterInviteModal({
       setInviteUrl(data.inviteUrl)
       setIsRevoked(false)
     } catch (error) {
-      console.error('Failed to generate invite:', error)
+      logger.error('Failed to generate invite:', error)
       setError('Failed to generate invite link')
     } finally {
       setLoading(false)
@@ -94,7 +95,7 @@ export function PresenterInviteModal({
 
       setIsRevoked(true)
     } catch (error) {
-      console.error('Failed to revoke invite:', error)
+      logger.error('Failed to revoke invite:', error)
       setError('Failed to revoke invite link')
     } finally {
       setLoading(false)
@@ -109,7 +110,7 @@ export function PresenterInviteModal({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      console.error('Failed to copy:', error)
+      logger.error('Failed to copy:', error)
     }
   }
 

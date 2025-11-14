@@ -8,6 +8,7 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // In-memory store for development (when Redis is not configured)
 class InMemoryStore {
@@ -196,7 +197,7 @@ export async function applyRateLimit(
     return { allowed: true }
   } catch (error) {
     // If rate limiting fails, allow the request but log the error
-    console.error('Rate limiting error:', error)
+    logger.error('Rate limiting error:', error)
     return { allowed: true }
   }
 }

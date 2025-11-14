@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Search, User, Video, MessageSquare, Users, ArrowUpCircle } from "lucide-react"
 import Link from "next/link"
+import { logger } from '@/lib/logger'
 
 interface SearchResult {
   type: 'user' | 'session' | 'topic' | 'room'
@@ -53,7 +54,7 @@ function SearchResultsContent() {
           setResults(data)
         }
       } catch (error) {
-        console.error('Search error:', error)
+        logger.error('Search error:', error)
       } finally {
         setLoading(false)
       }

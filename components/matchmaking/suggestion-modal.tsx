@@ -4,6 +4,8 @@ import { useState } from "react"
 import { X, Loader2, Clock, Sparkles } from "lucide-react"
 import { UserMatchCard } from "./user-match-card"
 import { useRouter } from "next/navigation"
+import { MatchReason } from "@/types/database"
+import { logger } from '@/lib/logger'
 
 interface SuggestionUser {
   id: string
@@ -18,7 +20,7 @@ interface SuggestionUser {
 interface Suggestion {
   id: string
   matchScore: number
-  matchReasons: any
+  matchReasons: MatchReason[]
   status: string
   expiresAt: string
   createdAt: string
@@ -69,7 +71,7 @@ export function SuggestionModal({ isOpen, onClose, suggestion }: SuggestionModal
         onClose()
       }
     } catch (err) {
-      console.error('Accept suggestion error:', err)
+      logger.error('Accept suggestion error:', err)
       setError('Failed to accept suggestion')
     } finally {
       setLoading(false)
@@ -97,7 +99,7 @@ export function SuggestionModal({ isOpen, onClose, suggestion }: SuggestionModal
 
       onClose()
     } catch (err) {
-      console.error('Decline suggestion error:', err)
+      logger.error('Decline suggestion error:', err)
       setError('Failed to decline suggestion')
     } finally {
       setLoading(false)
@@ -153,7 +155,7 @@ export function SuggestionModal({ isOpen, onClose, suggestion }: SuggestionModal
               {suggestion.suggestedUsers.map(user => {
                 // Calculate match info from matchReasons
                 const userReasons = Array.isArray(suggestion.matchReasons)
-                  ? suggestion.matchReasons.find((r: any) => r.user_id === user.id)
+                  ? suggestion.matchReasons.find((r) => r.user_id === user.id)
                   : null
 
                 return (

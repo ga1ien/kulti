@@ -8,6 +8,7 @@
 
 import toast from 'react-hot-toast'
 import { BADGE_INFO } from './constants'
+import { logger } from '@/lib/logger'
 
 /**
  * Show notification when a badge is earned
@@ -16,7 +17,7 @@ export function notifyBadgeEarned(badgeId: string) {
   const badge = BADGE_INFO[badgeId]
 
   if (!badge) {
-    console.warn(`Unknown badge: ${badgeId}`)
+    logger.warn(`Unknown badge: ${badgeId}`)
     return
   }
 

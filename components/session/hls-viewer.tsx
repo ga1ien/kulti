@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Hls from "hls.js"
 import { Loader2, Radio, Users, WifiOff } from "lucide-react"
 import { toast } from "react-hot-toast"
+import { logger } from '@/lib/logger'
 
 interface HLSViewerProps {
   streamUrl: string
@@ -30,7 +31,7 @@ export function HLSViewer({ streamUrl, sessionId, onError }: HLSViewerProps) {
           setViewerCount(data.count || 0)
         }
       } catch (error) {
-        console.error("Failed to fetch viewer count:", error)
+        logger.error("Failed to fetch viewer count:", error)
       }
     }
 
@@ -84,13 +85,13 @@ export function HLSViewer({ streamUrl, sessionId, onError }: HLSViewerProps) {
         setIsLive(true)
         // Auto-play when stream is ready
         video.play().catch((err) => {
-          console.error("Autoplay failed:", err)
+          logger.error("Autoplay failed:", err)
           toast.error("Click the video to start playback", { duration: 3000 })
         })
       })
 
       hls.on(Hls.Events.ERROR, (event, data) => {
-        console.error("HLS error:", data)
+        logger.error("HLS error:", data)
 
         if (data.fatal) {
           switch (data.type) {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Search, Clock, User, Video, MessageSquare, Users, X, Loader2 } from "lucide-react"
+import { logger } from '@/lib/logger'
 
 interface SearchSuggestion {
   type: 'user' | 'session' | 'topic' | 'room'
@@ -38,7 +39,7 @@ export function SearchBar({ className = "" }: SearchBarProps) {
       try {
         setRecentSearches(JSON.parse(stored))
       } catch (e) {
-        console.error('Failed to parse recent searches:', e)
+        logger.error('Failed to parse recent searches:', e)
       }
     }
   }, [])
@@ -97,7 +98,7 @@ export function SearchBar({ className = "" }: SearchBarProps) {
         setSuggestions(allResults)
       }
     } catch (error) {
-      console.error('Search error:', error)
+      logger.error('Search error:', error)
     } finally {
       setLoading(false)
     }

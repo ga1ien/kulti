@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Copy, Check, Monitor, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { logger } from '@/lib/logger'
 
 interface OBSPanelProps {
   sessionId: string
@@ -33,7 +34,7 @@ export function OBSPanel({ sessionId, isHost }: OBSPanelProps) {
         setRtmpUrl(data.rtmpUrl)
       }
     } catch (error) {
-      console.error("Failed to fetch stream key:", error)
+      logger.error("Failed to fetch stream key:", error)
     } finally {
       setLoading(false)
     }
@@ -56,7 +57,7 @@ export function OBSPanel({ sessionId, isHost }: OBSPanelProps) {
         setRtmpUrl(data.rtmpUrl)
       }
     } catch (error) {
-      console.error("Failed to create stream key:", error)
+      logger.error("Failed to create stream key:", error)
     } finally {
       setCreating(false)
     }

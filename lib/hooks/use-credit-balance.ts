@@ -24,7 +24,7 @@ export function useCreditBalance() {
         setError('Failed to fetch balance')
       }
     } catch (err) {
-      console.error('Failed to fetch balance:', err)
+      logger.error('Failed to fetch balance', { error: err })
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setLoading(false)

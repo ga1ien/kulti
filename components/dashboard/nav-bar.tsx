@@ -10,6 +10,7 @@ import { LogOut, User, Coins, Settings, Search, HelpCircle, Ticket } from "lucid
 import { formatCredits } from "@/lib/credits/config"
 import NotificationBell from "@/components/notifications/notification-bell"
 import { SearchBar } from "@/components/dashboard/search-bar"
+import { logger } from '@/lib/logger'
 
 /**
  * Supabase realtime payload interface
@@ -43,7 +44,7 @@ export function NavBar({ profile }: NavBarProps) {
           setCredits(data.credits_balance || 0)
         }
       } catch (error) {
-        console.error('Failed to fetch credits:', error)
+        logger.error('Failed to fetch credits:', error)
       } finally {
         setLoading(false)
       }

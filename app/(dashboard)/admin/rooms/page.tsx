@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import type { RoomFormData } from '@/components/admin/room-creation-form'
 import { Plus, Pencil, Trash, Archive } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { logger } from '@/lib/logger'
 
 // Code split RoomCreationForm - only load when modal is opened
 const RoomCreationForm = dynamic(
@@ -42,7 +43,7 @@ export default function RoomsPage() {
         setRooms(data)
       }
     } catch (error) {
-      console.error('Failed to fetch rooms:', error)
+      logger.error('Failed to fetch rooms', { error })
     } finally {
       setLoading(false)
     }
@@ -82,7 +83,7 @@ export default function RoomsPage() {
         fetchRooms()
       }
     } catch (error) {
-      console.error('Failed to archive room:', error)
+      logger.error('Failed to archive room', { error, roomId })
       alert('Failed to archive room')
     }
   }
@@ -101,7 +102,7 @@ export default function RoomsPage() {
         alert('Failed to delete room')
       }
     } catch (error) {
-      console.error('Failed to delete room:', error)
+      logger.error('Failed to delete room', { error, roomId })
       alert('Failed to delete room')
     }
   }

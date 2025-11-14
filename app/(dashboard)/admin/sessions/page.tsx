@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { formatDistanceToNow, formatDuration, intervalToDuration } from 'date-fns'
 import { Search, Star } from 'lucide-react'
+import { logger } from '@/lib/logger'
 
 interface Session {
   id: string
@@ -47,7 +48,7 @@ export default function SessionsPage() {
         setSessions(data)
       }
     } catch (error) {
-      console.error('Failed to fetch sessions:', error)
+      logger.error('Failed to fetch sessions', { error })
     } finally {
       setLoading(false)
     }
@@ -97,7 +98,7 @@ export default function SessionsPage() {
         )
       }
     } catch (error) {
-      console.error('Failed to toggle featured status:', error)
+      logger.error('Failed to toggle featured status', { error, sessionId, currentRank })
     }
   }
 
@@ -115,7 +116,7 @@ export default function SessionsPage() {
         fetchSessions()
       }
     } catch (error) {
-      console.error('Failed to end session:', error)
+      logger.error('Failed to end session', { error, sessionId })
       alert('Failed to end session')
     }
   }
@@ -132,7 +133,7 @@ export default function SessionsPage() {
         setSessions(sessions.filter((s) => s.id !== sessionId))
       }
     } catch (error) {
-      console.error('Failed to delete session:', error)
+      logger.error('Failed to delete session', { error, sessionId })
       alert('Failed to delete session')
     }
   }

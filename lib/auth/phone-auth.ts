@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import type { User, Session } from '@supabase/supabase-js'
+import { logger } from '@/lib/logger'
 
 /**
  * Result returned from phone authentication operations
@@ -75,7 +76,7 @@ export async function sendPhoneOTP(phone: string): Promise<PhoneAuthResult> {
     })
 
     if (error) {
-      console.error('Send OTP error:', error)
+      logger.error('Send OTP error:', error)
       return {
         success: false,
         error: error.message || 'Failed to send verification code',
@@ -84,7 +85,7 @@ export async function sendPhoneOTP(phone: string): Promise<PhoneAuthResult> {
 
     return { success: true, data }
   } catch (error) {
-    console.error('Send OTP error:', error)
+    logger.error('Send OTP error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to send verification code',
@@ -110,7 +111,7 @@ export async function verifyPhoneOTP(
     })
 
     if (error) {
-      console.error('Verify OTP error:', error)
+      logger.error('Verify OTP error:', error)
       return {
         success: false,
         error: error.message || 'Invalid or expired verification code',
@@ -126,7 +127,7 @@ export async function verifyPhoneOTP(
 
     return { success: true, data }
   } catch (error) {
-    console.error('Verify OTP error:', error)
+    logger.error('Verify OTP error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to verify code',
@@ -179,7 +180,7 @@ export async function completePhoneSignup(params: {
     const { error: refreshError } = await supabase.auth.refreshSession()
 
     if (refreshError) {
-      console.error('Client session refresh error:', refreshError)
+      logger.error('Client session refresh error:', refreshError)
       return {
         success: false,
         error: 'Account created but session refresh failed. Please try logging in.',
@@ -188,7 +189,7 @@ export async function completePhoneSignup(params: {
 
     return { success: true }
   } catch (error) {
-    console.error('Complete signup error:', error)
+    logger.error('Complete signup error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to complete signup',

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { X, Save } from "lucide-react"
 import { Profile } from "@/types/database"
 import { createClient } from "@/lib/supabase/client"
+import { logger } from '@/lib/logger'
 
 interface EditProfileModalProps {
   isOpen: boolean
@@ -35,14 +36,14 @@ export function EditProfileModal({
         .eq("id", profile.id)
 
       if (error) {
-        console.error("Update error:", error)
+        logger.error("Update error:", error)
         alert("Failed to update profile")
       } else {
         // Refresh the page to show updated data
         window.location.reload()
       }
     } catch (error) {
-      console.error("Save error:", error)
+      logger.error("Save error:", error)
       alert("Failed to save changes")
     } finally {
       setLoading(false)

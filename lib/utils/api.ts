@@ -37,7 +37,7 @@ export async function apiFetch<T = any>(
       status: response.status,
     }
   } catch (error) {
-    console.error('API fetch error:', error)
+    logger.error('API fetch error:', error)
     return {
       error: error instanceof Error ? error.message : 'Network error',
       ok: false,
@@ -56,7 +56,7 @@ export async function fetchCreditBalance(): Promise<number | null> {
     return response.data.credits_balance || 0
   }
 
-  console.error('Failed to fetch credit balance:', response.error)
+  logger.error('Failed to fetch credit balance:', response.error)
   return null
 }
 
@@ -73,7 +73,7 @@ export async function sendHeartbeat(sessionId: string, isActive: boolean): Promi
       sessionId,
       isActive,
     }),
-  }).catch(console.error)
+  }).catch((error) => logger.error('Heartbeat error', { error, sessionId, userId, isActive }))
 }
 
 /**

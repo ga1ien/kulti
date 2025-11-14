@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { SettingsSection } from "@/components/settings/settings-section"
 import { Save } from "lucide-react"
+import { logger } from '@/lib/logger'
 
 type ProfileVisibility = "public" | "friends" | "private"
 type SessionVisibility = "public" | "invite" | "private"
@@ -84,7 +85,7 @@ export default function PrivacySettingsPage() {
         alert("Failed to save privacy settings")
       }
     } catch (error) {
-      console.error("Save error:", error)
+      logger.error("Save error:", error)
       alert("Failed to save changes")
     } finally {
       setSaving(false)

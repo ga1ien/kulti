@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism"
 import { type AIPermissions, getNoAccessReason } from "@/lib/session"
+import { logger } from '@/lib/logger'
 
 /**
  * AI Message Payload interface
@@ -78,7 +79,7 @@ export function AIChatSidebar({
           setMessages(data.messages || [])
         }
       } catch (error) {
-        console.error("Failed to fetch AI messages:", error)
+        logger.error("Failed to fetch AI messages:", error)
       }
     }
 
@@ -179,7 +180,7 @@ export function AIChatSidebar({
         onBalanceUpdate()
       }
     } catch (error) {
-      console.error('Failed to send AI message:', error)
+      logger.error('Failed to send AI message:', error)
       const errorMessage = 'Failed to send message. Please check your connection and try again.'
       setError(errorMessage)
       toast.error(errorMessage)

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Notification } from '@/lib/notifications/service'
+import { logger } from '@/lib/logger'
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -26,7 +27,7 @@ export function useNotifications() {
       setNotifications(data.notifications || [])
       setUnreadCount(data.unreadCount || 0)
     } catch (err) {
-      console.error('Error fetching notifications:', err)
+      logger.error('Error fetching notifications:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch notifications')
     } finally {
       setLoading(false)
@@ -98,7 +99,7 @@ export function useNotifications() {
       )
       setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch (err) {
-      console.error('Error marking notification as read:', err)
+      logger.error('Error marking notification as read:', err)
       // Optionally refetch to get correct state
       fetchNotifications()
     }
@@ -118,7 +119,7 @@ export function useNotifications() {
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
       setUnreadCount(0)
     } catch (err) {
-      console.error('Error marking all notifications as read:', err)
+      logger.error('Error marking all notifications as read:', err)
       // Optionally refetch to get correct state
       fetchNotifications()
     }

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { DiagnosticsModal } from "./diagnostics-modal"
 import { QualitySettingsModal } from "./quality-settings-modal"
 import { toast } from "react-hot-toast"
+import { logger } from "@/lib/logger"
 
 /**
  * HMS Error with Code interface
@@ -94,7 +95,7 @@ export function PreviewScreen({ sessionId, roomId, onJoin, onCancel }: PreviewSc
 
         setIsLoading(false)
       } catch (error) {
-        console.error("Preview initialization error:", error)
+        logger.error("Preview initialization error", { error, sessionId, roomId })
         handleDeviceError(error)
         setIsLoading(false)
       }
@@ -192,7 +193,7 @@ export function PreviewScreen({ sessionId, roomId, onJoin, onCancel }: PreviewSc
         }
         updateLevel()
       } catch (error) {
-        console.error("Failed to setup audio analyser:", error)
+        logger.error("Failed to setup audio analyser", { error, sessionId })
       }
     }
 
@@ -246,7 +247,7 @@ export function PreviewScreen({ sessionId, roomId, onJoin, onCancel }: PreviewSc
           setIsTesting(false)
         }
       } catch (error) {
-        console.error("Failed to test speaker:", error)
+        logger.error("Failed to test speaker", { error, deviceId: selectedDeviceIDs.audioOutput })
         toast.error("Failed to play test sound")
       }
     }
@@ -277,7 +278,7 @@ export function PreviewScreen({ sessionId, roomId, onJoin, onCancel }: PreviewSc
 
       onJoin(data.token)
     } catch (error) {
-      console.error("Join error:", error)
+      logger.error("Join error", { error, sessionId, roomId })
       const message = error instanceof Error ? error.message : "Failed to join session"
       toast.error(message)
       setIsJoining(false)
@@ -291,7 +292,7 @@ export function PreviewScreen({ sessionId, roomId, onJoin, onCancel }: PreviewSc
       await updateDevice({ deviceType: 'videoInput', deviceId })
       toast.success("Camera updated")
     } catch (error) {
-      console.error("Failed to update video device:", error)
+      logger.error("Failed to update video device", { error, deviceId })
       toast.error("Failed to update camera")
     }
   }
@@ -302,7 +303,7 @@ export function PreviewScreen({ sessionId, roomId, onJoin, onCancel }: PreviewSc
       await updateDevice({ deviceType: 'audioInput', deviceId })
       toast.success("Microphone updated")
     } catch (error) {
-      console.error("Failed to update audio input:", error)
+      logger.error("Failed to update audio input", { error, deviceId })
       toast.error("Failed to update microphone")
     }
   }
@@ -313,7 +314,7 @@ export function PreviewScreen({ sessionId, roomId, onJoin, onCancel }: PreviewSc
       await updateDevice({ deviceType: 'audioOutput', deviceId })
       toast.success("Speaker updated")
     } catch (error) {
-      console.error("Failed to update audio output:", error)
+      logger.error("Failed to update audio output", { error, deviceId })
       toast.error("Failed to update speaker")
     }
   }

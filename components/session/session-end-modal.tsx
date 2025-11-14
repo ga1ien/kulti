@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { X, Coins, Trophy, Clock, TrendingUp, Star } from "lucide-react"
 import { formatCredits } from "@/lib/credits/config"
 import Link from "next/link"
+import { logger } from "@/lib/logger"
 
 interface SessionEndModalProps {
   isOpen: boolean
@@ -46,7 +47,7 @@ export function SessionEndModal({ isOpen, onClose, sessionId }: SessionEndModalP
         setSummary(data)
       }
     } catch (error) {
-      console.error("Failed to fetch session summary:", error)
+      logger.error("Failed to fetch session summary", { error, sessionId })
     } finally {
       setLoading(false)
     }

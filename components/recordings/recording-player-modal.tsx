@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { X, Download, Maximize2, Minimize2, Volume2, VolumeX, Play, Pause } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Recording } from "@/types/database"
+import { Recording, RecordingMetadata } from "@/types/database"
 import Hls from "hls.js"
 import { formatDistanceToNow } from "date-fns"
 import { logger } from "@/lib/logger"
@@ -164,7 +164,7 @@ export function RecordingPlayerModal({
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
-  const formatFileSize = (metadata: any) => {
+  const formatFileSize = (metadata: RecordingMetadata) => {
     if (!metadata?.size) return null
     const bytes = metadata.size
     const mb = (bytes / (1024 * 1024)).toFixed(2)

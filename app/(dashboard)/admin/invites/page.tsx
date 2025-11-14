@@ -6,6 +6,7 @@ import { InviteCodeTable } from '@/components/admin/invite-code-table'
 import { CreateInviteModal } from '@/components/admin/create-invite-modal'
 import { StatsCard } from '@/components/admin/stats-card'
 import type { Invite } from '@/types/database'
+import { logger } from '@/lib/logger'
 
 export default function InvitesPage() {
   const [invites, setInvites] = useState<Invite[]>([])
@@ -37,7 +38,7 @@ export default function InvitesPage() {
         setFilteredInvites(data)
       }
     } catch (error) {
-      console.error('Failed to fetch invites:', error)
+      logger.error('Failed to fetch invites', { error })
     } finally {
       setLoading(false)
     }
@@ -51,7 +52,7 @@ export default function InvitesPage() {
         setStats(data)
       }
     } catch (error) {
-      console.error('Failed to fetch stats:', error)
+      logger.error('Failed to fetch stats', { error })
     }
   }
 
@@ -91,7 +92,7 @@ export default function InvitesPage() {
         alert('Failed to create invite code')
       }
     } catch (error) {
-      console.error('Failed to create invite:', error)
+      logger.error('Failed to create invite', { error, params })
       alert('Failed to create invite code')
     }
   }
@@ -113,7 +114,7 @@ export default function InvitesPage() {
         alert('Failed to update invite code')
       }
     } catch (error) {
-      console.error('Failed to update invite:', error)
+      logger.error('Failed to update invite', { error, inviteId, isActive })
       alert('Failed to update invite code')
     }
   }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { X, Upload, Check, Loader2 } from "lucide-react"
 import { toast } from "react-hot-toast"
 import Image from "next/image"
+import { logger } from "@/lib/logger"
 
 interface BackgroundPickerProps {
   isOpen: boolean
@@ -137,7 +138,8 @@ export function BackgroundPicker({
 
       onClose()
     } catch (error) {
-      console.error("Failed to apply background:", error)
+      const selected = backgrounds.find((bg) => bg.id === selectedBackground)
+      logger.error("Failed to apply background", { error, type: selected?.type })
       toast.error("Failed to apply background effect")
     } finally {
       setIsApplying(false)

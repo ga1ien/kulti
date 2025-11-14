@@ -4,6 +4,7 @@ import { useState } from "react"
 import { X, TrendingUp, Star, Coins, Clock, Eye } from "lucide-react"
 import { formatCredits, FEATURE_COSTS } from "@/lib/credits/config"
 import { notifyCreditsSpent, notifyInsufficientCredits } from "@/lib/credits/notifications"
+import { logger } from '@/lib/logger'
 
 interface BoostSessionModalProps {
   isOpen: boolean
@@ -55,7 +56,7 @@ export function BoostSessionModal({
         }
       }
     } catch (error) {
-      console.error('Boost error:', error)
+      logger.error('Boost error:', error)
       alert('Failed to boost session. Please try again.')
     } finally {
       setLoading(false)

@@ -7,6 +7,7 @@ import { ChangeEmailModal } from "@/components/settings/change-email-modal"
 import { ChangePasswordModal } from "@/components/settings/change-password-modal"
 import { DeleteAccountModal } from "@/components/settings/delete-account-modal"
 import { Save, Mail, Lock, Download, Trash2, Loader2 } from "lucide-react"
+import { logger } from '@/lib/logger'
 
 export default function AccountSettingsPage() {
   const [profile, setProfile] = useState<any>(null)
@@ -79,7 +80,7 @@ export default function AccountSettingsPage() {
         alert("Failed to update profile")
       }
     } catch (error) {
-      console.error("Save error:", error)
+      logger.error("Save error:", error)
       alert("Failed to save changes")
     } finally {
       setSaving(false)
@@ -108,7 +109,7 @@ export default function AccountSettingsPage() {
         alert("Failed to export data")
       }
     } catch (error) {
-      console.error("Export error:", error)
+      logger.error("Export error:", error)
       alert("Failed to export data")
     } finally {
       setExportingData(false)

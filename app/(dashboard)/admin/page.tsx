@@ -9,6 +9,7 @@ import {
   DollarSign,
   MessageSquare,
 } from 'lucide-react'
+import { logger } from '@/lib/logger'
 
 // Code split admin components
 const StatsCard = dynamic(() => import('@/components/admin/stats-card').then(mod => ({ default: mod.StatsCard })), {
@@ -50,7 +51,7 @@ export default function AdminDashboard() {
           setActivity(await activityRes.json())
         }
       } catch (error) {
-        console.error('Failed to fetch dashboard data:', error)
+        logger.error('Failed to fetch dashboard data', { error })
       } finally {
         setLoading(false)
       }

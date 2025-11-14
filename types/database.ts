@@ -76,11 +76,33 @@ export type SessionParticipant = {
   joined_at: string
 }
 
+/**
+ * AI conversation context containing session and participant metadata
+ */
+export interface AIConversationContext {
+  sessionId?: string
+  participants?: string[]
+  topic?: string
+  [key: string]: unknown
+}
+
+/**
+ * AI message metadata containing model performance metrics
+ */
+export interface AIMessageMetadata {
+  model?: string
+  tokens?: number
+  latency?: number
+  temperature?: number
+  maxTokens?: number
+  [key: string]: unknown
+}
+
 export type AIConversation = {
   id: string
   session_id: string
   claude_conversation_id: string | null
-  context: any
+  context: AIConversationContext
   total_messages: number
   total_tokens_used: number
   total_cost_credits: number
@@ -94,7 +116,7 @@ export type AIMessage = {
   user_id: string | null
   role: 'user' | 'assistant' | 'system'
   content: string
-  metadata: any
+  metadata: AIMessageMetadata
   tokens_used: number
   cost_credits: number
   created_at: string
@@ -161,6 +183,21 @@ export type InviteStats = {
   }>
 }
 
+/**
+ * Recording metadata containing file information and technical details
+ */
+export interface RecordingMetadata {
+  recording_type?: string
+  duration?: number
+  size?: number
+  resolution?: string
+  format?: string
+  codec?: string
+  bitrate?: number
+  error?: string
+  [key: string]: unknown
+}
+
 export type Recording = {
   id: string
   session_id: string
@@ -168,7 +205,62 @@ export type Recording = {
   recording_url: string | null
   duration: number | null
   status: 'recording' | 'processing' | 'completed' | 'failed'
-  metadata: Record<string, any>
+  metadata: RecordingMetadata
   created_at: string
   updated_at: string
+}
+
+/**
+ * User profile statistics for achievements and activity
+ */
+export interface UserProfileStats {
+  sessions_attended: number
+  sessions_hosted: number
+  total_watch_hours: number
+  milestones_achieved: number
+  total_messages_sent?: number
+  average_session_rating?: number
+}
+
+/**
+ * Match reason details explaining why users were matched
+ */
+export interface MatchReason {
+  user_id: string
+  shared_skills: string[]
+  shared_interests: string[]
+  experience_match?: boolean
+  availability_match?: boolean
+  [key: string]: unknown
+}
+
+/**
+ * Extended session participant with join details and credits
+ */
+export interface SessionParticipantWithDetails {
+  session_id: string
+  user_id: string
+  role: 'host' | 'presenter' | 'viewer'
+  joined_at: string
+  left_at?: string | null
+  watch_duration_seconds?: number
+  credits_earned: number
+  sessions: {
+    id: string
+    title: string
+    description: string | null
+    host_id: string
+    started_at: string | null
+    ended_at: string | null
+    status: 'scheduled' | 'live' | 'ended'
+    host?: Profile
+  }
+}
+
+/**
+ * Extended session with host profile and participant count
+ */
+export interface SessionWithDetails extends Session {
+  host: Profile
+  participants?: Array<{ count: number }>
 }

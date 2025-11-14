@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Check, Users, Loader2, UserCircle } from "lucide-react"
 import Image from "next/image"
+import { logger } from "@/lib/logger"
 
 export interface ParticipantInfo {
   userId: string
@@ -54,7 +55,7 @@ export function UserSelector({
 
       setParticipants(filteredParticipants)
     } catch (err) {
-      console.error("Error fetching participants:", err)
+      logger.error("Error fetching participants", { error: err, sessionId })
       setError("Failed to load participants")
     } finally {
       setLoading(false)

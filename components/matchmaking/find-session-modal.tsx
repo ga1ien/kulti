@@ -6,6 +6,7 @@ import { X, Loader2, Sparkles, Users, RefreshCw } from "lucide-react"
 import { UserMatchCard } from "./user-match-card"
 import { UserCardSkeleton } from "@/components/ui/loading-skeleton"
 import { useRouter } from "next/navigation"
+import { logger } from '@/lib/logger'
 
 interface FindSessionModalProps {
   isOpen: boolean
@@ -59,7 +60,7 @@ export function FindSessionModal({ isOpen, onClose }: FindSessionModalProps) {
 
       setUsers(data.users || [])
     } catch (err) {
-      console.error('Fetch users error:', err)
+      logger.error('Fetch users error:', err)
       const errorMessage = 'Failed to load compatible users. Please try again.'
       setError(errorMessage)
       toast.error(errorMessage)
@@ -110,7 +111,7 @@ export function FindSessionModal({ isOpen, onClose }: FindSessionModalProps) {
         toast.error(errorMessage)
       }
     } catch (err) {
-      console.error('Quick match error:', err)
+      logger.error('Quick match error:', err)
       const errorMessage = 'Failed to find session. Please check your connection and try again.'
       setError(errorMessage)
       toast.error(errorMessage)
@@ -160,7 +161,7 @@ export function FindSessionModal({ isOpen, onClose }: FindSessionModalProps) {
         toast.error(errorMessage)
       }
     } catch (err) {
-      console.error('Create session error:', err)
+      logger.error('Create session error:', err)
       const errorMessage = 'Failed to create session. Please try again.'
       setError(errorMessage)
       toast.error(errorMessage)

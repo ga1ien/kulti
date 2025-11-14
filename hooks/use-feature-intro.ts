@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { logger } from '@/lib/logger'
 
 export const useFeatureIntro = (featureName: string) => {
   const [showIntro, setShowIntro] = useState(false)
@@ -12,7 +13,7 @@ export const useFeatureIntro = (featureName: string) => {
       const seen = localStorage.getItem(key)
       setShowIntro(seen !== "seen")
     } catch (error) {
-      console.error("Failed to check feature intro status:", error)
+      logger.error("Failed to check feature intro status:", error)
       setShowIntro(false)
     } finally {
       setIsLoaded(true)

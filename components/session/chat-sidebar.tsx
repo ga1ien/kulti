@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send } from "lucide-react"
 import { formatTime } from "@/lib/utils"
+import { logger } from "@/lib/logger"
 
 interface ChatSidebarProps {
   sessionId: string
@@ -88,7 +89,7 @@ export function ChatSidebar({ sessionId, userId }: ChatSidebarProps) {
       })
       setNewMessage("")
     } catch (error) {
-      console.error("Send message error:", error)
+      logger.error("Send message error", { error, sessionId, userId })
     } finally {
       setIsSending(false)
     }

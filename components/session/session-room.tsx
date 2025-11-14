@@ -36,6 +36,7 @@ import {
   countActiveViewers,
   getAllWatchDurations,
 } from "@/lib/hms/session-store"
+import { logger } from "@/lib/logger"
 
 // Code split video components
 const VideoGrid = dynamic(() => import("./video-grid").then(mod => ({ default: mod.VideoGrid })), {
@@ -266,13 +267,13 @@ function SessionRoomContent({
             }
           }
         } catch (streakError) {
-          console.error("Failed to update streak:", streakError)
+          logger.error("Failed to update streak", { error: streakError, userId, sessionId: session.id })
         }
 
         // Start watch time tracking
         watchStartTimeRef.current = Date.now()
       } catch (err) {
-        console.error("Join room error:", err)
+        logger.error("Join room error", { error: err, sessionId: session.id, userId })
         const errorMessage = err instanceof Error ? err.message : "Failed to join session"
         setError(errorMessage)
         toast.error(errorMessage)
@@ -416,7 +417,7 @@ function SessionRoomContent({
   const handleAIToggle = async (enabled: boolean) => {
     const result = await updateAIModule(session.id, { enabled })
     if (!result.success) {
-      console.error('Failed to toggle AI module:', result.error)
+      logger.error('Failed to toggle AI module', { error: result.error, sessionId: session.id, enabled })
     }
   }
 

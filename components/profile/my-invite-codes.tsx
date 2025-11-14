@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Ticket, Users, TrendingUp, Copy, Check, Sparkles, Gift } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Invite } from '@/types/database'
+import { logger } from '@/lib/logger'
 
 interface MyInviteCodesProps {
   userId: string
@@ -65,7 +66,7 @@ export function MyInviteCodes({ userId }: MyInviteCodesProps) {
         setInvites(data)
       }
     } catch (error) {
-      console.error('Failed to fetch my codes:', error)
+      logger.error('Failed to fetch my codes:', error)
     } finally {
       setLoading(false)
     }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Trophy, Medal, Award } from "lucide-react"
 import { formatCredits } from "@/lib/credits/config"
 import Link from "next/link"
+import { logger } from '@/lib/logger'
 
 interface CreditsLeaderboardProps {
   currentUserId: string
@@ -32,7 +33,7 @@ export function CreditsLeaderboard({ currentUserId }: CreditsLeaderboardProps) {
           setCurrentUserRank(data.current_user_rank)
         }
       } catch (error) {
-        console.error("Failed to fetch leaderboard:", error)
+        logger.error("Failed to fetch leaderboard:", error)
       } finally {
         setLoading(false)
       }

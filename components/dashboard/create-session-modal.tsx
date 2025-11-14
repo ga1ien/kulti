@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { X, Loader2 } from "lucide-react"
+import { logger } from '@/lib/logger'
 
 const createSessionSchema = z.object({
   title: z.string().min(1, "Title is required").max(60, "Title must be less than 60 characters"),
@@ -71,7 +72,7 @@ export function CreateSessionModal({ onClose }: CreateSessionModalProps) {
       router.push(`/s/${result.roomCode}`)
       router.refresh()
     } catch (err) {
-      console.error("Failed to create session:", err)
+      logger.error("Failed to create session:", err)
       const errorMessage = err instanceof Error ? err.message : "Network error. Please try again."
       toast.error(errorMessage)
       setError(errorMessage)

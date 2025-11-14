@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export interface Notification {
   id: string
@@ -48,7 +49,7 @@ export async function createNotification({
     .single()
 
   if (error) {
-    console.error('Error creating notification:', error)
+    logger.error('Error creating notification:', error)
     throw error
   }
 
@@ -189,7 +190,7 @@ export async function notifyTopicStreamStarted(
       notified++
     } else {
       errors++
-      console.error('Failed to send notification:', result.reason)
+      logger.error('Failed to send notification:', result.reason)
     }
   })
 
@@ -264,7 +265,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
     .eq('read', false)
 
   if (error) {
-    console.error('Error getting unread count:', error)
+    logger.error('Error getting unread count:', error)
     return 0
   }
 
@@ -283,7 +284,7 @@ export async function markNotificationAsRead(notificationId: string) {
     .eq('id', notificationId)
 
   if (error) {
-    console.error('Error marking notification as read:', error)
+    logger.error('Error marking notification as read:', error)
     throw error
   }
 }
@@ -301,7 +302,7 @@ export async function markAllNotificationsAsRead(userId: string) {
     .eq('read', false)
 
   if (error) {
-    console.error('Error marking all notifications as read:', error)
+    logger.error('Error marking all notifications as read:', error)
     throw error
   }
 }

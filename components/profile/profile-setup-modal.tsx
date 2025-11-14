@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { X, ChevronRight, ChevronLeft, Sparkles, Check } from "lucide-react"
 import { SKILL_OPTIONS, INTEREST_OPTIONS, EXPERIENCE_LEVELS, type ExperienceLevel } from "@/lib/matchmaking/constants"
+import { logger } from '@/lib/logger'
 
 interface ProfileSetupModalProps {
   isOpen: boolean
@@ -95,7 +96,7 @@ export function ProfileSetupModal({
       })
       onClose()
     } catch (err) {
-      console.error('Profile setup error:', err)
+      logger.error('Profile setup error:', err)
       setError('Failed to save profile. Please try again.')
     } finally {
       setLoading(false)

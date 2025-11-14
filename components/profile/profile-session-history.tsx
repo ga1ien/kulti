@@ -1,9 +1,10 @@
 import { Clock, Coins, Video } from "lucide-react"
 import { formatCredits } from "@/lib/credits/config"
 import Link from "next/link"
+import { SessionParticipantWithDetails } from "@/types/database"
 
 interface ProfileSessionHistoryProps {
-  sessions: any[]
+  sessions: SessionParticipantWithDetails[]
   profileUsername: string
 }
 
@@ -31,7 +32,7 @@ export function ProfileSessionHistory({
       <h2 className="font-mono text-2xl font-bold mb-6">Recent Sessions</h2>
 
       <div className="space-y-3">
-        {sessions.map((participant: any) => {
+        {sessions.map((participant) => {
           const session = participant.sessions
           if (!session) return null
 

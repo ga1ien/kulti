@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { SettingsSection } from "@/components/settings/settings-section"
 import { Save } from "lucide-react"
+import { logger } from '@/lib/logger'
 
 interface NotificationPreferences {
   tips_received: boolean
@@ -74,7 +75,7 @@ export default function NotificationSettingsPage() {
         alert("Failed to save notification preferences")
       }
     } catch (error) {
-      console.error("Save error:", error)
+      logger.error("Save error:", error)
       alert("Failed to save changes")
     } finally {
       setSaving(false)

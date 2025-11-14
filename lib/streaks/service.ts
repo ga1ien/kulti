@@ -5,6 +5,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export interface StreakResult {
   success: boolean
@@ -38,7 +39,7 @@ export async function updateStreak(userId: string): Promise<StreakResult> {
   })
 
   if (error) {
-    console.error('Failed to update streak:', error)
+    logger.error('Failed to update streak:', error)
     return {
       success: false,
       current_streak: 0,
@@ -66,7 +67,7 @@ export async function onSessionJoin(userId: string, sessionId: string): Promise<
   })
 
   if (error) {
-    console.error('Failed to process session join:', error)
+    logger.error('Failed to process session join:', error)
     return {
       success: false,
       streak: {
@@ -105,7 +106,7 @@ export async function getUserStreak(userId: string): Promise<{
     .single()
 
   if (error) {
-    console.error('Failed to get user streak:', error)
+    logger.error('Failed to get user streak:', error)
     return null
   }
 

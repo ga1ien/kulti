@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Users, Loader2, AlertCircle, Video } from "lucide-react"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { logger } from '@/lib/logger'
 
 const PresenterJoinPageContent = () => {
   const router = useRouter()
@@ -41,7 +42,7 @@ const PresenterJoinPageContent = () => {
         roomCode: data.session.roomCode,
       })
     } catch (error) {
-      console.error('Token validation error:', error)
+      logger.error('Token validation error:', error)
       setError('Failed to validate invite link.')
     } finally {
       setValidating(false)
@@ -89,7 +90,7 @@ const PresenterJoinPageContent = () => {
       // Redirect to session room
       router.push(`/s/${data.roomCode}`)
     } catch (error) {
-      console.error('Join error:', error)
+      logger.error('Join error:', error)
       setError('Failed to join session. Please try again.')
     } finally {
       setLoading(false)

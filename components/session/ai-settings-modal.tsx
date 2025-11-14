@@ -9,6 +9,7 @@ import {
   getAccessModeDescription,
 } from "@/lib/session"
 import { UserSelector } from "./user-selector"
+import { logger } from '@/lib/logger'
 
 interface AISettingsModalProps {
   isOpen: boolean
@@ -70,7 +71,7 @@ export function AISettingsModal({
       onUpdate()
       onClose()
     } catch (error) {
-      console.error('Failed to save AI settings:', error)
+      logger.error('Failed to save AI settings:', error)
       setError('Failed to save settings')
     } finally {
       setSaving(false)

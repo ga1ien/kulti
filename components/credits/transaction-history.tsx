@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { ArrowUpRight, ArrowDownLeft, Clock, Loader2 } from "lucide-react"
 import { TransactionRowSkeleton } from "@/components/ui/loading-skeleton"
 import { formatCredits } from "@/lib/credits/config"
+import { logger } from '@/lib/logger'
 
 interface TransactionHistoryProps {
   userId: string
@@ -92,7 +93,7 @@ export function TransactionHistory({ userId }: TransactionHistoryProps) {
           setTransactions(data.transactions)
         }
       } catch (error) {
-        console.error("Failed to fetch transactions:", error)
+        logger.error("Failed to fetch transactions:", error)
       } finally {
         setLoading(false)
       }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Coins, TrendingUp, TrendingDown, Activity, Loader2 } from "lucide-react"
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
 import { formatCredits } from "@/lib/credits/config"
+import { logger } from '@/lib/logger'
 
 interface CreditsOverviewProps {
   userId: string
@@ -32,7 +33,7 @@ export function CreditsOverview({ userId }: CreditsOverviewProps) {
           setStats(data.stats)
         }
       } catch (error) {
-        console.error("Failed to fetch stats:", error)
+        logger.error("Failed to fetch stats:", error)
       } finally {
         setLoading(false)
       }
