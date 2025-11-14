@@ -83,8 +83,10 @@ describe('Validation Utilities', () => {
 
     it('should reject invalid invite codes', () => {
       expect(isValidInviteCode('INVALID')).toBe(false)
-      expect(isValidInviteCode('vibe-a1b2')).toBe(false) // Lowercase
-      expect(isValidInviteCode('VIBE-ABCD')).toBe(true) // This is actually valid
+      expect(isValidInviteCode('vibe-a1b2')).toBe(true) // Lowercase is accepted (converted to uppercase)
+      expect(isValidInviteCode('VIBE-ABCD')).toBe(true)
+      expect(isValidInviteCode('TOO-SHORT')).toBe(false) // Wrong format
+      expect(isValidInviteCode('TOOLONG-1234')).toBe(false) // Wrong format
     })
   })
 

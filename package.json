@@ -8,6 +8,9 @@
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "db:backup": "./scripts/backup-db.sh",
     "db:restore": "./scripts/restore-db.sh",
     "db:verify": "./scripts/verify-backup.sh"
@@ -63,6 +66,12 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@types/canvas-confetti": "^1.9.0"
+    "@swc/jest": "^0.2.39",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^14.3.1",
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
   }
 }
