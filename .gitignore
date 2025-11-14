@@ -30,6 +30,10 @@ yarn-error.log*
 .env*.local
 .env
 
+# Keep .env.test for E2E testing (contains safe mock values)
+# But ignore .env.test.local which may contain real credentials
+!.env.test
+
 # vercel
 .vercel
 
