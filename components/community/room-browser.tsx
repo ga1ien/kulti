@@ -6,7 +6,7 @@ import Link from "next/link"
 
 interface RoomBrowserProps {
   rooms: RoomWithMembership[]
-  _currentUserId: string
+  currentUserId: string
 }
 
 const CATEGORY_ICONS: Record<RoomCategory, string> = {
@@ -43,7 +43,7 @@ const CATEGORY_LABELS: Record<RoomCategory, string> = {
 
 type CategoryFilter = RoomCategory | "all" | "joined"
 
-export function RoomBrowser({ rooms, currentUserId }: RoomBrowserProps) {
+export function RoomBrowser({ rooms, currentUserId: _currentUserId }: RoomBrowserProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all")
 

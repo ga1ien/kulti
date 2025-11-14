@@ -3,7 +3,7 @@ import { requireAdmin } from '@/lib/admin/permissions-server'
 import { getPlatformInviteStats } from '@/lib/invites/service'
 import { logger } from '@/lib/logger'
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   const authError = await requireAdmin(request)
   if (authError) return authError
 

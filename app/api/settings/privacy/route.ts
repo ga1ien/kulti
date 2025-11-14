@@ -24,7 +24,7 @@ interface PrivacyUpdateData {
   show_credit_balance?: boolean
 }
 
-export async function GET(_request: Request) {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient()
 

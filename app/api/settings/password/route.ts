@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import { logger } from '@/lib/logger'
 
-export async function POST(_request: Request) {
+export async function POST(request: Request) {
   try {
     const supabase = await createClient()
 

@@ -22,7 +22,7 @@ interface TopicDetailModalProps {
   isOpen: boolean
   onClose: () => void
   topic: TopicWithCreator | null
-  _currentUserId: string
+  currentUserId: string
   isHost?: boolean
   onTopicUpdated?: () => void
 }

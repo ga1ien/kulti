@@ -95,7 +95,16 @@
       "Bash(/Users/galenoakes/Development/kulti/Docs/ADDITIONAL_SERVICES_SETUP.md )",
       "Bash(/Users/galenoakes/Development/kulti/Docs/WEBHOOK_TESTING.md )",
       "Bash(/Users/galenoakes/Development/kulti/Docs/MONITORING_OBSERVABILITY.md)",
-      "Bash(npm run test:e2e:*)"
+      "Bash(npm run test:e2e:*)",
+      "Bash(for file in /Users/galenoakes/Development/kulti/app/api/admin/rooms/route.ts /Users/galenoakes/Development/kulti/app/api/admin/stats/route.ts /Users/galenoakes/Development/kulti/app/api/admin/sessions/route.ts /Users/galenoakes/Development/kulti/app/api/admin/users/route.ts)",
+      "Bash(do echo \"=== $file ===\" grep -n \"request\" \"$file\")",
+      "Bash(for file in )",
+      "Bash(\"app/api/settings/password/route.ts\" )",
+      "Bash(\"app/api/settings/privacy/route.ts\" )",
+      "Bash(\"app/api/settings/notifications/route.ts\")",
+      "Bash(if [ -f \"$file\" ])",
+      "Bash(perl -i -pe:*)",
+      "Bash(timeout 300 npm run build:*)"
     ],
     "deny": [],
     "ask": []

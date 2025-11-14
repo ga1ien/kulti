@@ -22,7 +22,7 @@ import { logger } from '@/lib/logger'
 interface TopicFeedProps {
   roomId: string
   topics: TopicWithCreator[]
-  _currentUserId: string
+  currentUserId: string
   isHost?: boolean
   onTopicCreated?: () => void
 }
@@ -164,7 +164,7 @@ export function TopicFeed({
 
 interface TopicCardProps {
   topic: TopicWithCreator
-  _currentUserId: string
+  currentUserId: string
   isHost: boolean
   onClick: (topic: TopicWithCreator) => void
 }
