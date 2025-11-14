@@ -1,56 +1,42 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+"use client"
+
+import { Suspense } from "react"
 import { RecordingsContent } from "@/components/recordings/recordings-content"
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
+import { Film } from "lucide-react"
 
-export const metadata = {
-  title: "My Recordings | Kulti",
-  description: "View and manage your session recordings",
-}
-
-export default async function RecordingsPage() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  // Get all recordings for sessions the user hosted
-  const { data: recordings, error } = await supabase
-    .from("recordings")
-    .select(
-      `
-      *,
-      sessions!inner (
-        id,
-        title,
-        description,
-        host_id,
-        started_at,
-        ended_at
-      )
-    `
-    )
-    .eq("sessions.host_id", user.id)
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    console.error("Error fetching recordings:", error)
-  }
-
+export default function RecordingsPage() {
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">My Recordings</h1>
-        <p className="text-muted-foreground">
-          View and manage recordings from your hosted sessions
-        </p>
+    <div className="space-y-8 sm:space-y-12 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:gap-6">
+        <div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-mono">
+            <span className="text-lime-400 mr-4">&gt;</span>My Recordings
+          </h1>
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-[#a1a1aa] mt-2 sm:mt-4">
+            View, manage, and watch your session recordings
+          </p>
+        </div>
       </div>
 
-      <RecordingsContent recordings={recordings || []} />
+      {/* Content */}
+      <Suspense fallback={<RecordingsLoadingSkeleton />}>
+        <RecordingsContent />
+      </Suspense>
+    </div>
+  )
+}
+
+function RecordingsLoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      <LoadingSkeleton className="h-12 w-full max-w-md" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[...Array(4)].map((_, i) => (
+          <LoadingSkeleton key={i} className="h-64 w-full rounded-2xl" />
+        ))}
+      </div>
     </div>
   )
 }
