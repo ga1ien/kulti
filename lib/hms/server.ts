@@ -92,11 +92,30 @@ export function generateHMSToken(
   }
 }
 
-export function verifyHMSToken(token: string): { valid: boolean; payload?: any } {
+/**
+ * HMS JWT token payload structure
+ */
+export interface HMSTokenPayload {
+  access_key: string
+  room_id: string
+  user_id: string
+  role: string
+  type: string
+  version: number
+  iat: number
+  nbf: number
+  exp: number
+  jti: string
+}
+
+/**
+ * Verify HMS token and return decoded payload
+ */
+export function verifyHMSToken(token: string): { valid: boolean; payload?: HMSTokenPayload } {
   try {
     const payload = jwt.verify(token, HMS_APP_SECRET, {
       algorithms: ["HS256"],
-    })
+    }) as HMSTokenPayload
     return { valid: true, payload }
   } catch (error) {
     return { valid: false }

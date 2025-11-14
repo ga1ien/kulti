@@ -81,13 +81,13 @@ export interface EphemeralUIState {
  */
 export interface SessionStoreSchema {
   // Watch duration by user ID (accessed via watch:userId)
-  [key: string]: WatchDurationData | ViewerCountData | LivePollData | EphemeralUIState | undefined
+  [key: string]: WatchDurationData | ViewerCountData | LivePollData | EphemeralUIState | null | undefined
 
   // Viewer counts
   viewers: ViewerCountData
 
   // Active poll
-  activePoll?: LivePollData | undefined
+  activePoll?: LivePollData | null | undefined
 
   // UI state
   uiState: EphemeralUIState
@@ -133,24 +133,30 @@ export function updateWatchDuration(
  * Get watch duration for a specific user
  */
 export function selectWatchDuration(userId: string) {
-  return (store: any) => {
+  return (store: HMSStore) => {
     const key = SESSION_STORE_KEYS.watchDuration(userId)
     return selectSessionStore(key)(store) as WatchDurationData | undefined
   }
 }
 
 /**
- * Get all watch durations (for host to see aggregate stats)
+ * Type for the HMS store selector function returned by useHMSStore hook
  */
-export function getAllWatchDurations(hmsStore: any): WatchDurationData[] {
+export type HMSStoreSelector = <T>(selector: (state: HMSStore) => T) => T
+
+/**
+ * Get all watch durations (for host to see aggregate stats)
+ * @param hmsStoreSelector - The selector function returned by useHMSStore hook
+ */
+export function getAllWatchDurations(hmsStoreSelector: HMSStoreSelector): WatchDurationData[] {
   // Access session store directly from the store state
-  const storeState = hmsStore((state: any) => state.sessionStore) as Record<string, any>
+  const storeState = hmsStoreSelector((state) => (state as { sessionStore?: Record<string, unknown> }).sessionStore)
   if (!storeState) return []
 
   return Object.entries(storeState)
     .filter(([key]) => key.startsWith("watch:"))
     .map(([_, value]) => value as WatchDurationData)
-    .filter(Boolean)
+    .filter((value): value is WatchDurationData => value !== null && value !== undefined)
 }
 
 // ============================================================================
@@ -178,7 +184,7 @@ export function updateViewerCount(
 /**
  * Selector for viewer count
  */
-export function selectViewerCount(store: any): ViewerCountData | undefined {
+export function selectViewerCount(store: HMSStore): ViewerCountData | undefined {
   return selectSessionStore(SESSION_STORE_KEYS.viewers)(store) as ViewerCountData | undefined
 }
 
@@ -225,7 +231,7 @@ export function closeActivePoll(hmsActions: HMSActions): void {
 /**
  * Selector for active poll
  */
-export function selectActivePoll(store: any): LivePollData | null {
+export function selectActivePoll(store: HMSStore): LivePollData | null {
   return selectSessionStore(SESSION_STORE_KEYS.activePoll)(store) as LivePollData | null
 }
 
@@ -287,7 +293,7 @@ export function setAnnouncement(
 /**
  * Selector for UI state
  */
-export function selectUIState(store: any): EphemeralUIState | undefined {
+export function selectUIState(store: HMSStore): EphemeralUIState | undefined {
   return selectSessionStore(SESSION_STORE_KEYS.uiState)(store) as EphemeralUIState | undefined
 }
 

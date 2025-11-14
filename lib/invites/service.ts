@@ -7,10 +7,16 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Invite, InviteUse, InviteStats } from '@/types/database'
 
+/**
+ * Metadata that can be attached to invites
+ * Flexible structure for tracking invite sources, campaigns, etc.
+ */
+export type InviteMetadata = Record<string, string | number | boolean | null>
+
 export interface CreateInviteParams {
   maxUses?: number
   expiresAt?: string | null
-  metadata?: Record<string, any>
+  metadata?: InviteMetadata
 }
 
 export interface CreateInviteResult {
@@ -93,7 +99,7 @@ export async function validateInviteCode(
 export async function useInviteCode(
   code: string,
   userId: string,
-  metadata: Record<string, any> = {}
+  metadata: InviteMetadata = {}
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
@@ -277,6 +283,20 @@ export async function reactivateInvite(inviteId: string): Promise<boolean> {
 }
 
 /**
+ * Profile data structure returned from database join
+ */
+interface InviteUseWithProfile {
+  used_at: string
+  used_by: string
+  profiles: {
+    id: string
+    username: string
+    display_name: string
+    avatar_url: string | null
+  }
+}
+
+/**
  * Get users who signed up with a specific invite code
  */
 export async function getInviteUsers(inviteId: string): Promise<
@@ -313,7 +333,7 @@ export async function getInviteUsers(inviteId: string): Promise<
   }
 
   return (
-    data?.map((row: any) => ({
+    (data as unknown as InviteUseWithProfile[])?.map((row) => ({
       id: row.profiles.id,
       username: row.profiles.username,
       display_name: row.profiles.display_name,

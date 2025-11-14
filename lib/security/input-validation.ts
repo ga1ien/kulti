@@ -192,15 +192,15 @@ export const creditTipSchema = z.object({
  */
 export const webhookPayloadSchema = z.object({
   type: z.string(),
-  data: z.record(z.string(), z.any()),
+  data: z.record(z.string(), z.unknown()),
   timestamp: z.string().optional(),
 })
 
 /**
  * Sanitize object keys (prevent prototype pollution)
  */
-export function sanitizeObjectKeys<T extends Record<string, any>>(obj: T): T {
-  const sanitized: any = {}
+export function sanitizeObjectKeys<T extends Record<string, unknown>>(obj: T): T {
+  const sanitized: Record<string, unknown> = {}
 
   for (const key in obj) {
     // Skip dangerous keys
@@ -211,16 +211,20 @@ export function sanitizeObjectKeys<T extends Record<string, any>>(obj: T): T {
     sanitized[key] = obj[key]
   }
 
-  return sanitized
+  return sanitized as T
 }
 
 /**
  * Validate and sanitize JSON input
+ * Returns unknown type for maximum type safety - consumer should validate the structure
  */
-export function sanitizeJson(input: string): any {
+export function sanitizeJson(input: string): unknown {
   try {
-    const parsed = JSON.parse(input)
-    return sanitizeObjectKeys(parsed)
+    const parsed: unknown = JSON.parse(input)
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      return sanitizeObjectKeys(parsed as Record<string, unknown>)
+    }
+    return parsed
   } catch (error) {
     throw new Error('Invalid JSON input')
   }

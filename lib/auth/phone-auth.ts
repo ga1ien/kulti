@@ -1,9 +1,16 @@
 import { createClient } from '@/lib/supabase/client'
+import type { User, Session } from '@supabase/supabase-js'
 
-export type PhoneAuthResult = {
+/**
+ * Result returned from phone authentication operations
+ */
+export interface PhoneAuthResult {
   success: boolean
   error?: string
-  data?: any
+  data?: {
+    user?: User | null
+    session?: Session | null
+  }
 }
 
 /**

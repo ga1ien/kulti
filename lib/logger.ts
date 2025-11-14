@@ -12,8 +12,12 @@ import { captureException, captureMessage, addBreadcrumb } from "./monitoring/se
 
 type LogLevel = 'error' | 'warn' | 'info' | 'debug'
 
+/**
+ * Metadata that can be attached to log messages
+ * Supports primitive values, objects, arrays, Error instances, and unknown (for catch blocks)
+ */
 interface LogMeta {
-  [key: string]: any
+  [key: string]: string | number | boolean | null | undefined | object | Error | unknown
 }
 
 const isDevelopment = process.env.NODE_ENV === 'development'
@@ -23,7 +27,17 @@ const isDevelopment = process.env.NODE_ENV === 'development'
  */
 function formatMessage(level: LogLevel, message: string, meta?: LogMeta): string {
   const timestamp = new Date().toISOString()
-  const metaStr = meta ? ` ${JSON.stringify(meta)}` : ''
+  const metaStr = meta ? ` ${JSON.stringify(meta, (key, value) => {
+    // Handle Error objects specially since they don't stringify well
+    if (value instanceof Error) {
+      return {
+        name: value.name,
+        message: value.message,
+        stack: value.stack,
+      }
+    }
+    return value
+  })}` : ''
   return `[${timestamp}] [${level.toUpperCase()}] ${message}${metaStr}`
 }
 

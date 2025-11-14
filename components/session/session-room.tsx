@@ -295,7 +295,7 @@ function SessionRoomContent({
   useEffect(() => {
     if (!isConnected) return
 
-    const allWatchData = getAllWatchDurations(useHMSStore as any)
+    const allWatchData = getAllWatchDurations(useHMSStore)
     const activeCount = countActiveViewers(allWatchData)
 
     updateViewerCount(hmsActions, peerCount, activeCount)
