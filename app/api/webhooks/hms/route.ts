@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { createHmac } from "crypto"
+import { createHmac, timingSafeEqual } from "crypto"
 import { logger } from "@/lib/logger"
 
 /**
@@ -29,7 +29,7 @@ function verifyWebhookSignature(
       .digest("hex")
 
     // Constant-time comparison to prevent timing attacks
-    return crypto.timingSafeEqual(
+    return timingSafeEqual(
       Buffer.from(signature),
       Buffer.from(expectedSignature)
     )
