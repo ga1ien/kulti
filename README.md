@@ -244,6 +244,52 @@ Ready to build? Check out:
 - `/Docs/DESIGN_SYSTEM.md` - UI/UX design guidelines
 
 ### Deployment Documentation
+
+**External Services Setup (Step-by-Step Guides):**
+- `/Docs/HMS_PRODUCTION_SETUP.md` - Complete 100ms HMS setup guide
+  - Account and workspace setup
+  - App configuration and credentials
+  - Template and role configuration
+  - Webhook setup and event handling
+  - Recording storage and HLS configuration
+  - Security settings and testing
+  - Monitoring and troubleshooting
+
+- `/Docs/SENTRY_PRODUCTION_SETUP.md` - Complete Sentry setup guide
+  - Project creation and DSN configuration
+  - SDK installation and configuration
+  - Source maps handling
+  - Error tracking and performance monitoring
+  - Alert rules and incident response
+  - Integrations (Slack, GitHub, Vercel)
+  - Dashboard and metrics tracking
+
+- `/Docs/ADDITIONAL_SERVICES_SETUP.md` - Setup guides for supporting services
+  - Upstash Redis (rate limiting)
+  - Anthropic AI (Claude API)
+  - Twilio (SMS OTP)
+  - Monitoring services (UptimeRobot, Statuspage)
+  - Email service (SendGrid)
+  - Storage services (AWS S3)
+
+**Testing and Operations:**
+- `/Docs/WEBHOOK_TESTING.md` - Comprehensive webhook testing guide
+  - Local testing with ngrok
+  - Staging environment testing
+  - Signature verification testing
+  - Common issues and troubleshooting
+  - Retry logic implementation
+  - Event examples and handlers
+
+- `/Docs/MONITORING_OBSERVABILITY.md` - Production monitoring and observability
+  - Key metrics to monitor (errors, latency, HMS usage)
+  - Dashboard setup (Vercel, Sentry, custom)
+  - Alert thresholds and configuration
+  - Log aggregation and search
+  - Performance optimization strategies
+  - Incident response procedures
+
+**Additional Guides:**
 - `/Docs/VERCEL_PRODUCTION_SETUP.md` - Step-by-step Vercel deployment guide
 - `/Docs/SUPABASE_PRODUCTION_SETUP.md` - Step-by-step Supabase configuration
 - `/Docs/ENV_VARIABLES_CHECKLIST.md` - Complete environment variables reference
