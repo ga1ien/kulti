@@ -106,13 +106,14 @@ export function ProfileSetupModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="profile-setup-title">
       <div className="relative w-full max-w-2xl mx-4 max-h-[90vh] bg-[#1a1a1a] border border-[#27272a] rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="relative bg-gradient-to-r from-lime-400/10 to-green-500/10 border-b border-[#27272a] p-6">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-[#2a2a2a] rounded-lg transition-colors"
+            aria-label="Close profile setup modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -121,7 +122,7 @@ export function ProfileSetupModal({
               <Sparkles className="w-6 h-6 text-black" />
             </div>
             <div>
-              <h2 className="font-mono text-2xl font-bold">Complete Your Profile</h2>
+              <h2 id="profile-setup-title" className="font-mono text-2xl font-bold">Complete Your Profile</h2>
               <p className="text-sm text-[#a1a1aa]">
                 Help us find perfect session matches for you
               </p>

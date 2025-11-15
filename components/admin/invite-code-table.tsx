@@ -7,7 +7,7 @@ import Link from 'next/link'
 
 interface InviteCodeTableProps {
   invites: Invite[]
-  onToggleActive: (id: string, isActive: boolean) => Promise<void>
+  onToggleActive: (_id: string, _isActive: boolean) => Promise<void>
   loading: boolean
 }
 

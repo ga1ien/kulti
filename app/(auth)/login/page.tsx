@@ -6,7 +6,7 @@ import Link from "next/link"
 
 export default function LoginPage() {
   return (
-    <div className="space-y-12 animate-fade-in">
+    <main className="space-y-12 animate-fade-in">
       <div className="text-center space-y-6">
         <h1 className="text-3xl md:text-6xl font-bold font-mono">Welcome Back</h1>
         <p className="text-lg md:text-2xl text-[#a1a1aa]">Sign in to your Kulti account</p>
@@ -34,18 +34,18 @@ export default function LoginPage() {
       </div>
 
       <div className="text-center space-y-3">
-        <p className="text-base md:text-lg text-[#71717a]">
+        <p className="text-base md:text-lg text-zinc-400">
           Don't have an account?{' '}
           <Link href="/signup" className="text-lime-400 hover:text-lime-300 transition-colors">
             Sign up
           </Link>
         </p>
-        <p className="text-base md:text-lg text-[#71717a]">
+        <p className="text-base md:text-lg text-zinc-400">
           <Link href="/" className="hover:text-lime-400 transition-colors">
             ← Back to home
           </Link>
         </p>
       </div>
-    </div>
+    </main>
   )
 }

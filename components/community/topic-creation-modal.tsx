@@ -100,13 +100,13 @@ export function TopicCreationModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="topic-creation-title">
       <div className="bg-[#0a0a0a] border border-[#27272a] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-white">Propose a Topic</h2>
+              <h2 id="topic-creation-title" className="text-2xl font-bold text-white">Propose a Topic</h2>
               <p className="text-sm text-[#a1a1aa] mt-1">
                 Suggest a topic for future streams and discussions
               </p>

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 
 interface RoomCreationFormProps {
-  onSubmit: (data: RoomFormData) => Promise<void>
+  onSubmit: (_data: RoomFormData) => Promise<void>
   onCancel: () => void
 }
 

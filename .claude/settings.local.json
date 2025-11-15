@@ -105,7 +105,16 @@
       "Bash(if [ -f \"$file\" ])",
       "Bash(perl -i -pe:*)",
       "Bash(timeout 300 npm run build:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(wait)",
+      "Bash(timeout 180 npm run test:accessibility:*)",
+      "Bash(./scripts/pre-deployment-check.sh:*)",
+      "Bash(for file in components/**/*modal*.tsx)",
+      "Bash(do if ! grep -q 'role=\"\"dialog\"\"' \"$file\")",
+      "Bash(then echo \"$file\")",
+      "Bash(while read f)",
+      "Bash(do if ! grep -q 'role=\"\"\"\"dialog\"\"\"\"' \"$f\")",
+      "Bash(/Users/galenoakes/Development/kulti/fix-modals.sh)"
     ],
     "deny": [],
     "ask": []

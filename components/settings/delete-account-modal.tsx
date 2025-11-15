@@ -63,6 +63,9 @@ export const DeleteAccountModal = ({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-account-title"
     >
       <div
         className="relative w-full max-w-lg mx-4 bg-[#1a1a1a] border-2 border-red-500/50 rounded-2xl shadow-2xl"
@@ -73,6 +76,7 @@ export const DeleteAccountModal = ({
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-[#2a2a2a] rounded-lg transition-colors"
+            aria-label="Close delete account modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -80,7 +84,7 @@ export const DeleteAccountModal = ({
             <div className="p-2 bg-red-500/20 rounded-lg">
               <AlertTriangle className="w-6 h-6 text-red-400" />
             </div>
-            <h2 className="font-mono text-2xl font-bold text-red-400">
+            <h2 id="delete-account-title" className="font-mono text-2xl font-bold text-red-400">
               Delete Account
             </h2>
           </div>

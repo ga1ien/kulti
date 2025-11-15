@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { SessionPage } from '../pages/SessionPage';
-import { DashboardPage } from '../pages/DashboardPage';
 import {
   createTestUser,
   createTestSession,

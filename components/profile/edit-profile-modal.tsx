@@ -53,17 +53,18 @@ export function EditProfileModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title">
       <div className="relative w-full max-w-2xl mx-4 bg-[#1a1a1a] border border-[#27272a] rounded-2xl shadow-2xl">
         {/* Header */}
         <div className="border-b border-[#27272a] p-6">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-[#2a2a2a] rounded-lg transition-colors"
+            aria-label="Close edit profile modal"
           >
             <X className="w-5 h-5" />
           </button>
-          <h2 className="font-mono text-2xl font-bold">Edit Profile</h2>
+          <h2 id="edit-profile-title" className="font-mono text-2xl font-bold">Edit Profile</h2>
         </div>
 
         {/* Content */}

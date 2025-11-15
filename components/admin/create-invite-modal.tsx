@@ -45,15 +45,16 @@ export function CreateInviteModal({ onClose, onCreate }: CreateInviteModalProps)
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="create-invite-title">
       <div className="w-full max-w-md rounded-lg border border-gray-800 bg-gray-900 p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">
+          <h2 id="create-invite-title" className="text-xl font-semibold text-white">
             Create Invite Code
           </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Close create invite modal"
           >
             <X className="h-5 w-5" />
           </button>

@@ -1,4 +1,6 @@
 // jest.setup.js
+/* eslint-env node, jest */
+/* global process, console, global, jest */
 import '@testing-library/jest-dom'
 
 // Set up environment variables for HMS tests

@@ -113,27 +113,30 @@ export function BackgroundPicker({
       if (!selected) return
 
       switch (selected.type) {
-        case "none":
+        case "none": {
           // Remove virtual background by disabling the plugin
           // @ts-ignore - HMS plugin API
           await virtualBgPlugin.disable?.() || virtualBgPlugin.removeBackground?.()
           toast.success("Background removed")
           break
+        }
 
-        case "blur":
+        case "blur": {
           // Apply blur - HMS virtual background uses "blur" and "slight-blur" presets
           const blurPreset = selected.id === "blur-high" ? "blur" : "slight-blur"
           await virtualBgPlugin.setBackground(blurPreset)
           toast.success("Blur effect applied")
           break
+        }
 
-        case "image":
+        case "image": {
           // Apply custom image
           if (customImage) {
             await virtualBgPlugin.setBackground(customImage)
             toast.success("Custom background applied")
           }
           break
+        }
       }
 
       onClose()

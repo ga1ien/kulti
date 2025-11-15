@@ -19,7 +19,7 @@ interface User {
 
 interface UserTableProps {
   users: User[]
-  onAction: (userId: string, action: string) => void
+  onAction: (_userId: string, _action: string) => void
   loading?: boolean
 }
 

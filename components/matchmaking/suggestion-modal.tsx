@@ -109,13 +109,14 @@ export function SuggestionModal({ isOpen, onClose, suggestion }: SuggestionModal
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="suggestion-modal-title">
       <div className="relative w-full max-w-2xl mx-4 max-h-[90vh] bg-[#1a1a1a] border border-[#27272a] rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="relative bg-gradient-to-r from-lime-400/10 to-green-500/10 border-b border-[#27272a] p-6">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-[#2a2a2a] rounded-lg transition-colors"
+            aria-label="Close suggestion modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -125,7 +126,7 @@ export function SuggestionModal({ isOpen, onClose, suggestion }: SuggestionModal
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="font-mono text-2xl font-bold">Perfect Match!</h2>
+                <h2 id="suggestion-modal-title" className="font-mono text-2xl font-bold">Perfect Match!</h2>
                 <span className="px-3 py-1 bg-lime-400 text-black text-sm font-bold rounded-full">
                   {matchPercentage}% Match
                 </span>

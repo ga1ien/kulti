@@ -60,7 +60,7 @@ export default async function SignupPage({
   const { invite } = await searchParams
 
   return (
-    <div className="space-y-12 animate-fade-in">
+    <main className="space-y-12 animate-fade-in">
       <div className="text-center space-y-6">
         <h1 className="text-3xl md:text-6xl font-bold font-mono">Join Kulti</h1>
         <p className="text-lg md:text-2xl text-[#a1a1aa]">create the future, live</p>
@@ -73,13 +73,13 @@ export default async function SignupPage({
       </div>
 
       <div className="text-center">
-        <p className="text-base md:text-lg text-[#71717a]">
+        <p className="text-base md:text-lg text-zinc-400">
           Already have an account?{' '}
           <Link href="/login" className="text-lime-400 hover:text-lime-300 transition-colors">
             Sign in
           </Link>
         </p>
       </div>
-    </div>
+    </main>
   )
 }

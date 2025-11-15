@@ -75,7 +75,7 @@ export default function InvitesPage() {
   async function handleCreateInvite(params: {
     maxUses: number
     expiresAt: string | null
-    metadata: Record<string, any>
+    metadata: Record<string, unknown>
   }) {
     try {
       const response = await fetch('/api/invites', {

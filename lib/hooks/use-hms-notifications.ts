@@ -17,21 +17,23 @@ export function useHMSNotificationHandler() {
     if (!notification) return
 
     switch (notification.type) {
-      case HMSNotificationTypes.PEER_JOINED:
+      case HMSNotificationTypes.PEER_JOINED: {
         toast.success(`${notification.data?.name || 'Someone'} joined the session`, {
           duration: 2000,
           icon: '👋',
         })
         break
+      }
 
-      case HMSNotificationTypes.PEER_LEFT:
+      case HMSNotificationTypes.PEER_LEFT: {
         toast(`${notification.data?.name || 'Someone'} left the session`, {
           duration: 2000,
           icon: '👋',
         })
         break
+      }
 
-      case HMSNotificationTypes.ERROR:
+      case HMSNotificationTypes.ERROR: {
         const error = notification.data
         logger.error('HMS Error', { error })
 
@@ -48,24 +50,27 @@ export function useHMSNotificationHandler() {
           toast.error(error.message || 'An error occurred')
         }
         break
+      }
 
-      case HMSNotificationTypes.RECONNECTING:
+      case HMSNotificationTypes.RECONNECTING: {
         toast('Reconnecting...', {
           duration: Infinity,
           id: 'reconnecting',
           icon: '🔄',
         })
         break
+      }
 
-      case HMSNotificationTypes.RECONNECTED:
+      case HMSNotificationTypes.RECONNECTED: {
         toast.dismiss('reconnecting')
         toast.success('Reconnected successfully!', {
           duration: 3000,
           icon: '✅',
         })
         break
+      }
 
-      case HMSNotificationTypes.TRACK_MUTED:
+      case HMSNotificationTypes.TRACK_MUTED: {
         const mutedPeer = (notification.data as any)?.peer
         if (!mutedPeer?.isLocal) {
           toast(`${mutedPeer?.name}'s ${(notification.data as any)?.track?.type} was muted`, {
@@ -73,8 +78,9 @@ export function useHMSNotificationHandler() {
           })
         }
         break
+      }
 
-      case HMSNotificationTypes.TRACK_UNMUTED:
+      case HMSNotificationTypes.TRACK_UNMUTED: {
         const unmutedPeer = (notification.data as any)?.peer
         if (!unmutedPeer?.isLocal) {
           toast(`${unmutedPeer?.name}'s ${(notification.data as any)?.track?.type} was unmuted`, {
@@ -82,13 +88,15 @@ export function useHMSNotificationHandler() {
           })
         }
         break
+      }
 
-      case HMSNotificationTypes.DEVICE_CHANGE_UPDATE:
+      case HMSNotificationTypes.DEVICE_CHANGE_UPDATE: {
         toast('Camera or microphone changed', {
           duration: 2000,
           icon: '🎥',
         })
         break
+      }
 
       default:
         // Ignore other notifications

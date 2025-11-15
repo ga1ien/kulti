@@ -51,15 +51,31 @@ UPSTASH_REDIS_REST_URL=        # For rate limiting (optional)
 UPSTASH_REDIS_REST_TOKEN=      # Redis token (optional)
 ```
 
+### Environment Configuration Files
+
+The testing setup uses two environment files:
+
+#### `.env.test` (Committed to Git)
+- Contains **safe mock values** for all services
+- Allows tests to run without crashes
+- Supports UI, accessibility, and navigation tests
+- Does NOT require real API credentials
+- **Safe to commit** - contains no secrets
+
+#### `.env.test.local` (Gitignored)
+- Contains **real staging/test credentials**
+- Required for integration tests with real services
+- Should be created from `.env.test.local.example`
+- **NEVER committed** - contains real API keys
+
 ### Setup Options
 
 #### Option 1: Mock Services (Recommended for development)
 
-The `.env.test` file contains safe mock values that allow basic E2E tests to run:
+The `.env.test` file is already configured with mock values. No additional setup needed.
 
 ```bash
-# Already configured in .env.test
-# No action needed - tests will use mock values
+# Run tests with mock services (no real API calls)
 npm run test:e2e:local
 ```
 
@@ -69,34 +85,45 @@ npm run test:e2e:local
 - Form validation
 - Basic page rendering
 - Client-side interactions
+- Layout and responsive design
+- Component rendering
 
 **What doesn't work with mocks:**
 - Database operations (create/read/update/delete)
-- Authentication flows
+- Authentication flows (signup/login)
 - Video session joining
-- Real-time features
-- AI integrations
+- Real-time features (websockets)
+- AI integrations (transcription)
+- External API calls
+
+**Use this for:**
+- Quick feedback during development
+- Accessibility testing
+- UI/UX validation
+- CI/CD checks that don't need real services
 
 #### Option 2: Real Services (For full integration testing)
 
-1. Copy `.env.test` to `.env.test.local`:
+When you need to test features that require real services:
+
+1. Copy the example file to create your local config:
    ```bash
-   cp .env.test .env.test.local
+   cp .env.test.local.example .env.test.local
    ```
 
-2. Update `.env.test.local` with real credentials:
+2. Edit `.env.test.local` with real credentials:
    ```bash
-   # Get these from your Supabase project dashboard
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_real_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_real_service_role_key
+   # Get Supabase credentials from: https://app.supabase.com/project/_/settings/api
+   NEXT_PUBLIC_SUPABASE_URL=https://your-staging-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_staging_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_staging_service_role_key
 
-   # Get these from 100ms dashboard
-   NEXT_PUBLIC_HMS_APP_ID=your_real_hms_app_id
-   HMS_APP_ACCESS_KEY=your_real_access_key
-   HMS_APP_SECRET=your_real_secret
-   HMS_TEMPLATE_ID=your_real_template_id
-   HMS_MANAGEMENT_TOKEN=your_real_token
+   # Get 100ms credentials from: https://dashboard.100ms.live/
+   NEXT_PUBLIC_HMS_APP_ID=your_test_app_id
+   HMS_APP_ACCESS_KEY=your_test_access_key
+   HMS_APP_SECRET=your_test_secret
+   HMS_TEMPLATE_ID=your_test_template_id
+   HMS_MANAGEMENT_TOKEN=your_test_management_token
    ```
 
 3. Run tests with real services:
@@ -104,7 +131,18 @@ npm run test:e2e:local
    npm run test:e2e:staging
    ```
 
-**Important**: `.env.test.local` is gitignored and should never be committed.
+**Use this for:**
+- Authentication testing
+- Database integration testing
+- Video session functionality
+- End-to-end user flows
+- Pre-deployment validation
+
+**Important Notes:**
+- `.env.test.local` is gitignored and should **NEVER be committed**
+- Use a dedicated staging/test environment, not production
+- Test data is automatically cleaned up after tests run
+- Some tests may consume API credits (HMS, Anthropic)
 
 ## Running E2E Tests
 

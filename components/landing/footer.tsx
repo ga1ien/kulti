@@ -35,7 +35,7 @@ export function Footer() {
           </a>
         </p>
 
-        <p className="text-sm text-[#71717a] pt-2">
+        <p className="text-sm text-zinc-400 pt-2">
           © 2025 Kulti
         </p>
       </div>

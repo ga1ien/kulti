@@ -10,7 +10,7 @@ import { Save, Mail, Lock, Download, Trash2, Loader2 } from "lucide-react"
 import { logger } from '@/lib/logger'
 
 export default function AccountSettingsPage() {
-  const [profile, setProfile] = useState<any>(null)
+  const [profile, setProfile] = useState<{ id: string; username: string; display_name: string; bio: string | null } | null>(null)
   const [email, setEmail] = useState<string>("")
   const [displayName, setDisplayName] = useState<string>("")
   const [bio, setBio] = useState<string>("")

@@ -42,7 +42,8 @@ export async function DELETE(
     }
 
     // TypeScript type assertion for the joined data
-    const sessionHost = (recording.sessions as any).host_id
+    const sessions = recording.sessions as unknown as { host_id: string }
+    const sessionHost = sessions.host_id
 
     if (sessionHost !== user.id) {
       return NextResponse.json(

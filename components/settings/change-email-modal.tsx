@@ -68,6 +68,9 @@ export const ChangeEmailModal = ({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="change-email-title"
     >
       <div
         className="relative w-full max-w-lg mx-4 bg-[#1a1a1a] border border-[#27272a] rounded-2xl shadow-2xl"
@@ -78,6 +81,7 @@ export const ChangeEmailModal = ({
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-[#2a2a2a] rounded-lg transition-colors"
+            aria-label="Close change email modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -85,7 +89,7 @@ export const ChangeEmailModal = ({
             <div className="p-2 bg-lime-400/10 rounded-lg">
               <Mail className="w-6 h-6 text-lime-400" />
             </div>
-            <h2 className="font-mono text-2xl font-bold">Change Email</h2>
+            <h2 id="change-email-title" className="font-mono text-2xl font-bold">Change Email</h2>
           </div>
         </div>
 

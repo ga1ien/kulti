@@ -71,7 +71,7 @@ export function TopicDetailModal({
 
     try {
       // Use the topic_id field that comes from the database
-      const topicId = (topic as any).topic_id || topic.id
+      const topicId = ('topic_id' in topic ? topic.topic_id : topic.id) as string
       const response = await getTopicComments(topicId)
       setComments(response.comments)
     } catch (error) {
@@ -87,8 +87,8 @@ export function TopicDetailModal({
 
     setIsVoting(true)
     try {
-      const topicId = (topic as any).topic_id || topic.id
-      const result = await toggleTopicVote(topicId)
+      const voteTopicId = ('topic_id' in topic ? topic.topic_id : topic.id) as string
+      const result = await toggleTopicVote(voteTopicId)
       setLocalVoteCount(result.newCount)
       setLocalHasVoted(result.upvoted)
       onTopicUpdated?.()
@@ -109,7 +109,7 @@ export function TopicDetailModal({
     setError(null)
 
     try {
-      const topicId = (topic as any).topic_id || topic.id
+      const topicId = ('topic_id' in topic ? topic.topic_id : topic.id) as string
       const response = await createTopicComment(topicId, newComment.trim())
       setComments([...comments, response.comment])
       setNewComment("")
@@ -135,7 +135,7 @@ export function TopicDetailModal({
     setError(null)
 
     try {
-      const topicId = (topic as any).topic_id || topic.id
+      const topicId = ('topic_id' in topic ? topic.topic_id : topic.id) as string
       const result = await streamTopic(topicId)
       router.push(`/session/${result.roomCode}`)
     } catch (error) {
@@ -159,12 +159,12 @@ export function TopicDetailModal({
   const canStreamTopic = isHost && topic.status === "proposed" && localVoteCount >= 5
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="topic-detail-title">
       <div className="bg-[#0a0a0a] border border-[#27272a] rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b border-[#27272a]">
           <div className="flex-1 pr-4">
-            <h2 className="text-2xl font-bold text-white mb-2">{topic.title}</h2>
+            <h2 id="topic-detail-title" className="text-2xl font-bold text-white mb-2">{topic.title}</h2>
             {topic.description && (
               <p className="text-[#a1a1aa] text-sm">{topic.description}</p>
             )}

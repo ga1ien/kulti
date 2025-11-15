@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTransactions } from '@/lib/credits'
+import { TransactionType } from '@/lib/credits/config'
 import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
     const transactions = await getTransactions(user.id, {
       limit,
       offset,
-      type: type as any,
+      type: type as TransactionType | undefined,
     })
 
     return NextResponse.json({

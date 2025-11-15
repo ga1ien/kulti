@@ -142,8 +142,6 @@ test.describe('Authentication Flow', () => {
   });
 
   test('should redirect to login when accessing protected route', async ({ page }) => {
-    const authPage = new AuthPage(page);
-
     // Try to access protected route without auth
     await page.goto('/dashboard/sessions');
     await page.waitForTimeout(1000);
