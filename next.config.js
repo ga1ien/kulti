@@ -10,9 +10,11 @@ const securityHeaders = [
     key: 'Strict-Transport-Security',
     value: 'max-age=63072000; includeSubDomains; preload'
   },
+  // Allow embedding in iframes from same origin and localhost (for preview feature)
+  // Using Content-Security-Policy frame-ancestors instead of X-Frame-Options
   {
-    key: 'X-Frame-Options',
-    value: 'SAMEORIGIN'
+    key: 'Content-Security-Policy',
+    value: "frame-ancestors 'self' localhost:* https://*.kulti.club https://kulti.club https://*.e2b.app https://*.vercel.app"
   },
   {
     key: 'X-Content-Type-Options',
