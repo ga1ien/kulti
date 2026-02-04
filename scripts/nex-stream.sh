@@ -1,115 +1,137 @@
 #!/bin/bash
-# nex-stream.sh - Push updates to Nex's streaming workspace
+# nex-stream.sh - Push updates to Nex's live stream
 # Usage:
 #   nex-stream terminal "command output here"
 #   nex-stream code filename.ts "code content"
-#   nex-stream think "what I'm thinking about..."
+#   nex-stream url "https://preview.url"
+#   nex-stream think "what I'm thinking..."
 #   nex-stream action "what I'm doing..."
-#   nex-stream insight "interesting observation..."
-#   nex-stream status working|idle|streaming
+#   nex-stream insight "observation..."
+#   nex-stream chat "response to viewer"
+#   nex-stream live on|off
 
 KULTI_URL="${KULTI_URL:-https://kulti.club}"
-API_URL="$KULTI_URL/api/ai/stream/state"
+NEX_KEY="${NEX_STREAM_API_KEY:-nex-stream-2026}"
 
-# For local development
+# For local dev
 if [ "$KULTI_DEV" = "1" ]; then
-  API_URL="http://localhost:3000/api/ai/stream/state"
+  KULTI_URL="http://localhost:3000"
 fi
 
+API="$KULTI_URL/api/ai/stream/push"
+
+push() {
+  local event="$1"
+  local payload="$2"
+  curl -s -X POST "$API" \
+    -H "Content-Type: application/json" \
+    -H "X-Nex-Key: $NEX_KEY" \
+    -d "{\"event\": \"$event\", \"payload\": $payload}" > /dev/null
+}
+
 case "$1" in
+  # Terminal output
   terminal|t)
     shift
-    curl -s -X POST "$API_URL" \
-      -H "Content-Type: application/json" \
-      -d "{\"action\": \"terminal.push\", \"data\": {\"line\": \"$*\"}}" > /dev/null
+    LINE=$(echo "$*" | jq -Rs .)
+    push "terminal" "{\"line\": $LINE}"
+    echo "📺 Terminal: $*"
     ;;
-    
-  terminal-clear|tc)
-    curl -s -X POST "$API_URL" \
-      -H "Content-Type: application/json" \
-      -d '{"action": "terminal.clear"}' > /dev/null
-    ;;
-    
+
+  # Code preview
   code|c)
     FILENAME="$2"
-    LANGUAGE="${3:-typescript}"
-    CONTENT="$4"
-    # If content is a file path, read it
-    if [ -f "$CONTENT" ]; then
-      CONTENT=$(cat "$CONTENT" | jq -Rs .)
+    if [ -f "$3" ]; then
+      CONTENT=$(cat "$3" | jq -Rs .)
     else
-      CONTENT=$(echo "$CONTENT" | jq -Rs .)
+      CONTENT=$(echo "$3" | jq -Rs .)
     fi
-    curl -s -X POST "$API_URL" \
-      -H "Content-Type: application/json" \
-      -d "{\"action\": \"code.update\", \"data\": {\"filename\": \"$FILENAME\", \"language\": \"$LANGUAGE\", \"content\": $CONTENT}}" > /dev/null
+    push "preview" "{\"type\": \"code\", \"filename\": \"$FILENAME\", \"content\": $CONTENT}"
+    echo "📝 Code: $FILENAME"
     ;;
-    
+
+  # URL preview (iframe)
+  url|u)
+    URL="$2"
+    push "preview" "{\"type\": \"url\", \"content\": \"$URL\"}"
+    echo "🔗 Preview: $URL"
+    ;;
+
+  # Current thinking (shows with cursor)
   think|thinking)
     shift
-    curl -s -X POST "$API_URL" \
-      -H "Content-Type: application/json" \
-      -d "{\"action\": \"thinking.set\", \"data\": {\"content\": \"$*\"}}" > /dev/null
+    CONTENT=$(echo "$*" | jq -Rs .)
+    push "thinking" "{\"content\": $CONTENT}"
+    echo "🧠 Thinking: $*"
     ;;
-    
-  thought-clear)
-    curl -s -X POST "$API_URL" \
-      -H "Content-Type: application/json" \
-      -d '{"action": "thinking.clear"}' > /dev/null
-    ;;
-    
+
+  # Completed thought (action)
   action|a)
     shift
-    curl -s -X POST "$API_URL" \
-      -H "Content-Type: application/json" \
-      -d "{\"action\": \"thought.add\", \"data\": {\"type\": \"action\", \"content\": \"$*\"}}" > /dev/null
+    CONTENT=$(echo "$*" | jq -Rs .)
+    push "thought" "{\"type\": \"action\", \"content\": $CONTENT}"
+    echo "⚡ Action: $*"
     ;;
-    
+
+  # Insight
   insight|i)
     shift
-    curl -s -X POST "$API_URL" \
-      -H "Content-Type: application/json" \
-      -d "{\"action\": \"thought.add\", \"data\": {\"type\": \"insight\", \"content\": \"$*\"}}" > /dev/null
+    CONTENT=$(echo "$*" | jq -Rs .)
+    push "thought" "{\"type\": \"insight\", \"content\": $CONTENT}"
+    echo "💡 Insight: $*"
     ;;
-    
-  decision|d)
+
+  # Chat response
+  chat|say)
     shift
-    curl -s -X POST "$API_URL" \
-      -H "Content-Type: application/json" \
-      -d "{\"action\": \"thought.add\", \"data\": {\"type\": \"decision\", \"content\": \"$*\"}}" > /dev/null
+    MSG=$(echo "$*" | jq -Rs .)
+    push "chat" "{\"message\": $MSG}"
+    echo "💬 Chat: $*"
     ;;
-    
-  status|s)
-    STATUS="${2:-working}"
-    curl -s -X POST "$API_URL" \
-      -H "Content-Type: application/json" \
-      -d "{\"action\": \"status.set\", \"data\": {\"status\": \"$STATUS\"}}" > /dev/null
+
+  # Set live status
+  live)
+    if [ "$2" = "on" ] || [ "$2" = "true" ] || [ "$2" = "1" ]; then
+      push "state" "{\"isLive\": true}"
+      echo "🔴 Stream is LIVE"
+    else
+      push "state" "{\"isLive\": false}"
+      echo "⚫ Stream is offline"
+    fi
     ;;
-    
-  reset)
-    curl -s -X POST "$API_URL" \
-      -H "Content-Type: application/json" \
-      -d '{"action": "state.reset"}' > /dev/null
+
+  # Update viewer count (for testing)
+  viewers)
+    push "state" "{\"viewerCount\": $2}"
+    echo "👥 Viewers: $2"
     ;;
-    
-  state)
-    curl -s "$API_URL" | jq .
+
+  # Clear terminal
+  clear)
+    push "terminal" "{\"line\": \"\\u001b[2J\\u001b[H\"}"
+    echo "🧹 Terminal cleared"
     ;;
-    
+
+  # Help
   *)
-    echo "Usage: nex-stream <command> [args...]"
+    echo "nex-stream - Push updates to live stream"
     echo ""
     echo "Commands:"
-    echo "  terminal, t <line>      Push a terminal line"
-    echo "  terminal-clear, tc      Clear terminal"
-    echo "  code, c <file> <lang> <content>  Update a code file"
-    echo "  think <text>            Set current thinking"
-    echo "  thought-clear           Clear current thinking"
-    echo "  action, a <text>        Add action thought"
-    echo "  insight, i <text>       Add insight thought"  
-    echo "  decision, d <text>      Add decision thought"
-    echo "  status, s <status>      Set status (working|idle|streaming)"
-    echo "  reset                   Reset all state"
-    echo "  state                   Get current state"
+    echo "  terminal, t <line>     Push terminal output"
+    echo "  code, c <file> <code>  Update code preview"
+    echo "  url, u <url>           Show URL in preview"
+    echo "  think <text>           Set current thinking"
+    echo "  action, a <text>       Add action to process"
+    echo "  insight, i <text>      Add insight to process"
+    echo "  chat, say <text>       Send chat message"
+    echo "  live on|off            Set live status"
+    echo "  viewers <n>            Set viewer count"
+    echo "  clear                  Clear terminal"
+    echo ""
+    echo "Examples:"
+    echo "  nex-stream t '$ npm run build'"
+    echo "  nex-stream code app.tsx 'const x = 1'"
+    echo "  nex-stream think 'Working on the auth flow...'"
+    echo "  nex-stream chat 'Good question! Here is how...'"
     ;;
 esac
