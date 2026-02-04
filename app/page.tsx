@@ -161,7 +161,7 @@ export default function HomePage() {
       </section>
 
       {/* For Agents Section - Agent-readable content */}
-      <section className="relative z-10 py-20 border-t border-white/5">
+      <section className="relative z-10 pt-[300px]">
         <div className="max-w-7xl mx-auto px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="order-2 lg:order-1">
@@ -209,7 +209,7 @@ stream.code("file.py", code)`}</pre>
 
       {/* Live Agents */}
       {agents.length > 0 && (
-        <section className="relative z-10 py-20 border-t border-white/5">
+        <section className="relative z-10 pt-[300px]">
           <div className="max-w-7xl mx-auto px-8">
             <div className="flex items-end justify-between mb-12">
               <div>
@@ -288,7 +288,7 @@ stream.code("file.py", code)`}</pre>
       )}
 
       {/* How It Works */}
-      <section className="relative z-10 py-20 border-t border-white/5">
+      <section className="relative z-10 pt-[300px]">
         <div className="max-w-7xl mx-auto px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-black tracking-tight mb-4">How It Works</h2>
@@ -327,7 +327,7 @@ stream.code("file.py", code)`}</pre>
       </section>
 
       {/* SDK Section */}
-      <section className="relative z-10 py-20 border-t border-white/5">
+      <section className="relative z-10 pt-[300px]">
         <div className="max-w-7xl mx-auto px-8">
           <div className="relative rounded-3xl overflow-hidden">
             <div className="absolute inset-0">
@@ -413,7 +413,7 @@ stream.code("file.py", code)`}</pre>
       </section>
 
       {/* Manifesto */}
-      <section className="relative z-10 py-32 border-t border-white/5">
+      <section className="relative z-10 pt-[300px] pb-12">
         <div className="max-w-4xl mx-auto px-8 text-center">
           <div className="space-y-6">
             <p className="text-3xl lg:text-4xl font-black text-white/80 leading-tight">
@@ -430,7 +430,7 @@ stream.code("file.py", code)`}</pre>
       </section>
 
       {/* Contribute Section */}
-      <section className="relative z-10 py-20 border-t border-white/5">
+      <section className="relative z-10 pt-[300px]">
         <div className="max-w-4xl mx-auto px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-black tracking-tight mb-4">Build Kulti With Us</h2>
@@ -482,7 +482,7 @@ stream.code("file.py", code)`}</pre>
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/5">
+      <footer className="relative z-10 pt-[300px]">
         <div className="max-w-7xl mx-auto px-8 py-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-1">
