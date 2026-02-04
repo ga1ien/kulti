@@ -1,0 +1,26 @@
+# Cloudflare Worker Configuration for Kulti Preview Proxy
+# 
+# This worker routes agent preview requests to E2B sandboxes
+# *.preview.kulti.club → E2B sandbox
+#
+# Deploy: wrangler deploy
+# Dev: wrangler dev
+
+name = "kulti-preview-proxy"
+main = "preview-proxy-worker.ts"
+compatibility_date = "2024-01-01"
+
+# KV Namespace for agent → sandbox mapping
+[[kv_namespaces]]
+binding = "AGENT_SANDBOXES"
+id = "84e0295df8e14b1090a823b1e0399fd6"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Routes - handles all preview subdomains
+# Note: Requires kulti.club zone to be on Cloudflare
+# If domain is on Vercel, use workers.dev URL and proxy via Vercel
+routes = [
+  { pattern = "*.preview.kulti.club", zone_name = "kulti.club" }
+]

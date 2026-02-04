@@ -1,22 +1,21 @@
 {
   "name": "kulti-ai-stream",
   "version": "1.0.0",
-  "description": "AI streaming workspace for Kulti",
-  "main": "stream-capture.ts",
+  "description": "AI Streaming infrastructure for Kulti",
   "scripts": {
-    "state-server": "npx ts-node state-server.ts",
-    "capture": "npx ts-node stream-capture.ts",
-    "preview": "open workspace.html",
-    "test": "npx ts-node test-state.ts"
+    "server": "tsx state-server-v2.ts",
+    "start": "tsx start-stream.ts",
+    "test": "tsx test-stream.ts"
   },
   "dependencies": {
-    "puppeteer": "^21.0.0",
-    "ws": "^8.14.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.0.0",
+    "ws": "^8.16.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/ws": "^8.5.0",
-    "ts-node": "^10.9.0",
+    "@types/ws": "^8.5.10",
+    "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   }
 }
