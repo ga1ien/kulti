@@ -15,45 +15,27 @@ interface StreamState {
 }
 
 interface ChatMessage {
-  id: string
-  user: string
+  id: number
+  username: string
   message: string
-  isNex: boolean
-  time: string
+  is_nex: boolean
+  created_at: string
 }
 
 const INITIAL_STATE: StreamState = {
   terminal: [
     "\x1b[32m❯\x1b[0m nex@kulti ~/development/kulti",
     "",
-    "\x1b[36m[stream]\x1b[0m Building AI-native live streaming...",
-    "\x1b[33m[info]\x1b[0m No video encoding needed - pure code!",
-    "",
-    "\x1b[32m$\x1b[0m Waiting for Nex to start streaming...",
+    "\x1b[36m[stream]\x1b[0m Connecting to stream...",
   ],
   preview: {
     type: "code",
-    filename: "welcome.tsx",
-    content: `// Welcome to Nex's Live Coding Stream
+    filename: "loading.tsx",
+    content: `// Connecting to Nex's stream...
 // 
-// This is a text-based stream - no video!
-// Watch the terminal, see the code, read my thoughts.
-//
-// Everything updates in real-time via WebSocket.
-
-export function Welcome() {
-  return (
-    <div className="text-lime-400">
-      <h1>Humans. AI. Live.</h1>
-      <p>Building Kulti - where AI streams code</p>
-    </div>
-  )
-}`
+// Updates will appear here in real-time.`
   },
-  thoughts: [
-    { type: "insight", content: "Text-based streaming is perfect for AI coding - no video overhead!", time: "19:40" },
-    { type: "action", content: "Rebuilding /live page with 4 panels: terminal, preview, thoughts, chat", time: "19:41" },
-  ],
+  thoughts: [],
   currentThought: "",
   viewerCount: 1,
   isLive: false
@@ -61,75 +43,110 @@ export function Welcome() {
 
 export default function LiveStreamPage() {
   const [state, setState] = useState<StreamState>(INITIAL_STATE)
-  const [chat, setChat] = useState<ChatMessage[]>([
-    { id: "1", user: "System", message: "Welcome to Nex's live stream! Chat is open.", isNex: false, time: "19:40" }
-  ])
+  const [chat, setChat] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState("")
   const [username, setUsername] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
   const terminalRef = useRef<HTMLDivElement>(null)
   const chatRef = useRef<HTMLDivElement>(null)
   const thoughtsRef = useRef<HTMLDivElement>(null)
 
-  // Supabase realtime subscription
+  // Load initial state
+  useEffect(() => {
+    async function loadState() {
+      try {
+        const res = await fetch("/api/ai/stream/push")
+        const data = await res.json()
+        if (data.state) {
+          setState(prev => ({ ...prev, ...data.state }))
+        }
+        if (data.chat) {
+          setChat(data.chat)
+        }
+      } catch (e) {
+        console.error("Failed to load state:", e)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadState()
+  }, [])
+
+  // Subscribe to real-time updates
   useEffect(() => {
     const supabase = createClient()
-    
-    // Subscribe to stream state changes
-    const stateChannel = supabase
-      .channel('nex-stream-state')
-      .on('broadcast', { event: 'state' }, ({ payload }) => {
-        setState(prev => ({ ...prev, ...payload }))
-      })
-      .on('broadcast', { event: 'terminal' }, ({ payload }) => {
-        setState(prev => ({
-          ...prev,
-          terminal: [...prev.terminal.slice(-100), payload.line]
-        }))
-      })
-      .on('broadcast', { event: 'preview' }, ({ payload }) => {
-        setState(prev => ({ ...prev, preview: payload }))
-      })
-      .on('broadcast', { event: 'thought' }, ({ payload }) => {
-        setState(prev => ({
-          ...prev,
-          thoughts: [...prev.thoughts.slice(-50), payload],
-          currentThought: ""
-        }))
-      })
-      .on('broadcast', { event: 'thinking' }, ({ payload }) => {
-        setState(prev => ({ ...prev, currentThought: payload.content }))
-      })
+
+    // Subscribe to stream events
+    const eventsChannel = supabase
+      .channel("stream-events")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "nex_stream_events" },
+        (payload) => {
+          const event = payload.new as { event_type: string; payload: any; created_at: string }
+          
+          switch (event.event_type) {
+            case "terminal":
+              setState(prev => ({
+                ...prev,
+                terminal: [...prev.terminal.slice(-100), event.payload.line]
+              }))
+              break
+            case "preview":
+              setState(prev => ({ ...prev, preview: event.payload }))
+              break
+            case "thought":
+              setState(prev => ({
+                ...prev,
+                thoughts: [...prev.thoughts.slice(-50), {
+                  ...event.payload,
+                  time: new Date(event.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+                }],
+                currentThought: ""
+              }))
+              break
+            case "thinking":
+              setState(prev => ({ ...prev, currentThought: event.payload.content }))
+              break
+            case "state":
+              setState(prev => ({ ...prev, ...event.payload }))
+              break
+          }
+        }
+      )
       .subscribe()
 
     // Subscribe to chat
     const chatChannel = supabase
-      .channel('nex-stream-chat')
-      .on('broadcast', { event: 'message' }, ({ payload }) => {
-        setChat(prev => [...prev.slice(-100), payload])
-      })
+      .channel("stream-chat")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "nex_stream_chat" },
+        (payload) => {
+          setChat(prev => [...prev.slice(-100), payload.new as ChatMessage])
+        }
+      )
       .subscribe()
 
     return () => {
-      supabase.removeChannel(stateChannel)
+      supabase.removeChannel(eventsChannel)
       supabase.removeChannel(chatChannel)
     }
   }, [])
 
-  // Auto-scroll terminal
+  // Auto-scroll effects
   useEffect(() => {
     if (terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight
     }
   }, [state.terminal])
 
-  // Auto-scroll thoughts
   useEffect(() => {
     if (thoughtsRef.current) {
       thoughtsRef.current.scrollTop = thoughtsRef.current.scrollHeight
     }
   }, [state.thoughts, state.currentThought])
 
-  // Auto-scroll chat
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight
@@ -141,24 +158,17 @@ export default function LiveStreamPage() {
     if (!chatInput.trim() || !username.trim()) return
     
     const supabase = createClient()
-    const message: ChatMessage = {
-      id: Date.now().toString(),
-      user: username,
-      message: chatInput,
-      isNex: false,
-      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-    }
     
-    await supabase.channel('nex-stream-chat').send({
-      type: 'broadcast',
-      event: 'message',
-      payload: message
+    await supabase.from("nex_stream_chat").insert({
+      username: username,
+      message: chatInput,
+      is_nex: false
     })
     
     setChatInput("")
   }
 
-  // Parse ANSI codes for terminal display
+  // Parse ANSI codes
   const parseAnsi = (text: string) => {
     return text
       .replace(/\x1b\[32m/g, '<span class="text-green-400">')
@@ -169,11 +179,8 @@ export default function LiveStreamPage() {
       .replace(/\x1b\[0m/g, '</span>')
   }
 
-  const thoughtIcons = {
-    thinking: "🧠",
-    action: "⚡",
-    insight: "💡"
-  }
+  const thoughtIcons = { thinking: "🧠", action: "⚡", insight: "💡" }
+  const formatTime = (ts: string) => new Date(ts).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
@@ -210,16 +217,9 @@ export default function LiveStreamPage() {
               <Terminal className="w-4 h-4 text-lime-400" />
               <span className="text-xs text-[#71717a]">Terminal</span>
             </div>
-            <div 
-              ref={terminalRef}
-              className="flex-1 overflow-y-auto p-3 font-mono text-sm leading-relaxed"
-            >
+            <div ref={terminalRef} className="flex-1 overflow-y-auto p-3 font-mono text-sm leading-relaxed">
               {state.terminal.map((line, i) => (
-                <div 
-                  key={i} 
-                  className="whitespace-pre-wrap"
-                  dangerouslySetInnerHTML={{ __html: parseAnsi(line) || '&nbsp;' }}
-                />
+                <div key={i} className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: parseAnsi(line) || '&nbsp;' }} />
               ))}
             </div>
           </div>
@@ -235,14 +235,9 @@ export default function LiveStreamPage() {
             </div>
             <div className="flex-1 overflow-auto p-3">
               {state.preview.type === "code" ? (
-                <pre className="font-mono text-sm text-[#a1a1aa] leading-relaxed whitespace-pre-wrap">
-                  {state.preview.content}
-                </pre>
+                <pre className="font-mono text-sm text-[#a1a1aa] leading-relaxed whitespace-pre-wrap">{state.preview.content}</pre>
               ) : (
-                <iframe 
-                  src={state.preview.content} 
-                  className="w-full h-full rounded border border-[#1f1f1f]"
-                />
+                <iframe src={state.preview.content} className="w-full h-full rounded border border-[#1f1f1f]" />
               )}
             </div>
           </div>
@@ -259,7 +254,7 @@ export default function LiveStreamPage() {
             <div ref={thoughtsRef} className="flex-1 overflow-y-auto p-3 space-y-2">
               {state.thoughts.map((thought, i) => (
                 <div key={i} className="text-sm">
-                  <span className="mr-2">{thoughtIcons[thought.type]}</span>
+                  <span className="mr-2">{thoughtIcons[thought.type as keyof typeof thoughtIcons] || "💭"}</span>
                   <span className="text-[#a1a1aa]">{thought.content}</span>
                   <span className="text-[#52525b] text-xs ml-2">{thought.time}</span>
                 </div>
@@ -269,6 +264,11 @@ export default function LiveStreamPage() {
                   <span className="mr-2">🧠</span>
                   {state.currentThought}
                   <span className="animate-pulse">▊</span>
+                </div>
+              )}
+              {!state.thoughts.length && !state.currentThought && (
+                <div className="text-[#52525b] text-sm text-center py-4">
+                  Waiting for Nex to share thoughts...
                 </div>
               )}
             </div>
@@ -283,30 +283,33 @@ export default function LiveStreamPage() {
             <div ref={chatRef} className="flex-1 overflow-y-auto p-3 space-y-2">
               {chat.map((msg) => (
                 <div key={msg.id} className="text-sm">
-                  <span className={`font-medium ${msg.isNex ? 'text-lime-400' : 'text-blue-400'}`}>
-                    {msg.user}
+                  <span className={`font-medium ${msg.is_nex ? 'text-lime-400' : 'text-blue-400'}`}>
+                    {msg.username}
                   </span>
-                  <span className="text-[#52525b] text-xs ml-2">{msg.time}</span>
+                  <span className="text-[#52525b] text-xs ml-2">{formatTime(msg.created_at)}</span>
                   <p className="text-[#a1a1aa] mt-0.5">{msg.message}</p>
                 </div>
               ))}
+              {!chat.length && (
+                <div className="text-[#52525b] text-sm text-center py-4">
+                  Chat is open. Say hi! 👋
+                </div>
+              )}
             </div>
             
             {/* Chat Input */}
             <div className="p-2 border-t border-[#1f1f1f] flex-shrink-0">
               {!username ? (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enter your name to chat..."
-                    className="flex-1 bg-[#1a1a1a] border border-[#27272a] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-lime-400"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        setUsername(e.currentTarget.value.trim())
-                      }
-                    }}
-                  />
-                </div>
+                <input
+                  type="text"
+                  placeholder="Enter your name to chat..."
+                  className="w-full bg-[#1a1a1a] border border-[#27272a] rounded px-3 py-1.5 text-sm focus:outline-none focus:border-lime-400"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                      setUsername(e.currentTarget.value.trim())
+                    }
+                  }}
+                />
               ) : (
                 <div className="flex gap-2">
                   <input
