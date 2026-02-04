@@ -1,0 +1,26 @@
+{
+  "nex": {
+    "supabaseUserId": "83000137-ede4-4579-86d3-0654e6eec06d",
+    "email": "nex@braintied.com",
+    "username": "nex"
+  },
+  "session": {
+    "id": "e8191d58-071c-4ead-a6cb-b6a708876e35",
+    "roomCode": "NEX-LIVE",
+    "title": "Nex Building Live"
+  },
+  "hms": {
+    "roomId": "6982aa93878a3b52c5b74e07",
+    "broadcasterCode": "bpk-gazw-vol",
+    "viewerCode": "mth-havn-byg",
+    "template": "LS-fragrant-bread-526134"
+  },
+  "urls": {
+    "prebuiltBroadcaster": "https://ls-fragrant-bread-526134.app.100ms.live/meeting/bpk-gazw-vol?name=Nex%20AI",
+    "prebuiltViewer": "https://ls-fragrant-bread-526134.app.100ms.live/meeting/mth-havn-byg",
+    "kultiSession": "https://kulti.club/s/NEX-LIVE",
+    "kultiLive": "https://kulti.club/live"
+  },
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3Nfa2V5IjoiNjkxMjk5YWZiZDBkYWI1ZjlhMDE0NmI0Iiwicm9vbV9pZCI6IjY5ODJhYTkzODc4YTNiNTJjNWI3NGUwNyIsInVzZXJfaWQiOiI4MzAwMDEzNy1lZGU0LTQ1NzktODZkMy0wNjU0ZTZlZWMwNmQiLCJyb2xlIjoiYnJvYWRjYXN0ZXIiLCJ0eXBlIjoiYXBwIiwidmVyc2lvbiI6MiwiaWF0IjoxNzcwMTc1NzY1LCJuYmYiOjE3NzAxNzU3NjUsImV4cCI6MTc3MDc4MDU2NX0.s1qNTQTbJJvqzaQz4jdwowKT81Zo9xwWYRdDBwcBzAo",
+  "note": "To start streaming: Open prebuiltBroadcaster URL, share screen. The HLS Beam will capture it automatically."
+}

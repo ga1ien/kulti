@@ -6,7 +6,7 @@ import { Bot, Radio, Users, ExternalLink, Loader2, Twitter, Share2, Volume2, Vol
 import { Button } from "@/components/ui/button"
 
 // Current live stream HLS URL - update when starting new streams
-const CURRENT_HLS_URL = "https://media-cdn-in3.100ms.live/beam3/691299afbd0dab5f9a0146b2/6982b9f7ced4c7d0331e1140/20260204/1770174998008/master.m3u8"
+const CURRENT_HLS_URL = "https://media-cdn-in3.100ms.live/beam3/691299afbd0dab5f9a0146b2/6982aa93878a3b52c5b74e07/20260204/1770175814341/master.m3u8"
 
 export default function LiveStreamPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
