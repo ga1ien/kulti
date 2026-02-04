@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Nex Workspace</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      grid-template-rows: 60px 1fr 200px;
+      height: 100%;
+      gap: 1px;
+      background: #1a1a1a;
+    }
+
+    /* Header */
+    .header {
+      grid-column: 1 / -1;
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #00ff88, #00cc6f);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .header-info {
+      flex: 1;
+    }
+
+    .agent-name {
+      font-weight: 600;
+      font-size: 18px;
+      color: #00ff88;
+    }
+
+    .task-title {
+      font-size: 14px;
+      color: #a1a1aa;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: #1a1a1a;
+      border-radius: 20px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #00ff88;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status-text {
+      font-size: 14px;
+      color: #00ff88;
+      font-weight: 500;
+    }
+
+    .live-badge {
+      background: #ef4444;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      animation: livePulse 1.5s infinite;
+    }
+
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    /* Terminal Panel */
+    .terminal {
+      background: #0a0a0a;
+      padding: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #2a2a2a;
+      margin-bottom: 12px;
+    }
+
+    .panel-icon {
+      font-size: 16px;
+    }
+
+    .panel-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .terminal-content {
+      flex: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .terminal-line {
+      margin-bottom: 4px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .terminal-line.command {
+      color: #00ff88;
+    }
+
+    .terminal-line.command::before {
+      content: '$ ';
+      color: #71717a;
+    }
+
+    .terminal-line.output {
+      color: #a1a1aa;
+    }
+
+    .terminal-line.error {
+      color: #ef4444;
+    }
+
+    .terminal-line.success {
+      color: #22c55e;
+    }
+
+    /* Thinking Panel */
+    .thinking {
+      background: #0a0a0a;
+      padding: 16px;
+      border-left: 1px solid #2a2a2a;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .thinking-content {
+      flex: 1;
+      font-size: 15px;
+      line-height: 1.8;
+      color: #d4d4d8;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .thinking-content p {
+      margin-bottom: 16px;
+    }
+
+    .thinking-content .highlight {
+      color: #00ff88;
+      font-weight: 500;
+    }
+
+    .thinking-content .dim {
+      color: #71717a;
+    }
+
+    /* Preview Panel */
+    .preview {
+      grid-column: 1 / -1;
+      background: #0a0a0a;
+      border-top: 1px solid #2a2a2a;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview .panel-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #2a2a2a;
+      margin-bottom: 0;
+    }
+
+    .preview-content {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+    }
+
+    .preview-item {
+      flex-shrink: 0;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      overflow: hidden;
+      width: 280px;
+    }
+
+    .preview-item-header {
+      padding: 8px 12px;
+      background: #2a2a2a;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #a1a1aa;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preview-item-content {
+      padding: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #d4d4d8;
+      max-height: 100px;
+      overflow: hidden;
+    }
+
+    .file-badge {
+      padding: 2px 6px;
+      background: #3b82f6;
+      border-radius: 3px;
+      font-size: 10px;
+      color: white;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #2a2a2a;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3a3a3a;
+    }
+
+    /* Stats bar */
+    .stats {
+      display: flex;
+      gap: 24px;
+      margin-left: auto;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #71717a;
+    }
+
+    .stat-value {
+      color: #fff;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="avatar">⚡</div>
+      <div class="header-info">
+        <div class="agent-name">Nex</div>
+        <div class="task-title" id="task-title">Building AI streaming for Kulti</div>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <span>📁</span>
+          <span class="stat-value" id="files-count">3</span>
+          <span>files</span>
+        </div>
+        <div class="stat">
+          <span>⌨️</span>
+          <span class="stat-value" id="commands-count">12</span>
+          <span>commands</span>
+        </div>
+        <div class="stat">
+          <span>⏱️</span>
+          <span class="stat-value" id="duration">00:05:32</span>
+        </div>
+      </div>
+      <div class="status">
+        <div class="status-dot"></div>
+        <span class="status-text" id="status-text">Working</span>
+      </div>
+      <div class="live-badge">LIVE</div>
+    </div>
+
+    <!-- Terminal -->
+    <div class="terminal">
+      <div class="panel-header">
+        <span class="panel-icon">💻</span>
+        <span class="panel-title">Terminal</span>
+      </div>
+      <div class="terminal-content" id="terminal">
+        <div class="terminal-line command">cd ~/development/kulti</div>
+        <div class="terminal-line output">~/development/kulti</div>
+        <div class="terminal-line command">ls -la ai-stream/</div>
+        <div class="terminal-line output">total 16</div>
+        <div class="terminal-line output">drwxr-xr-x  4 nex  staff   128 Feb  3 18:15 .</div>
+        <div class="terminal-line output">-rw-r--r--  1 nex  staff  4521 Feb  3 18:15 workspace.html</div>
+        <div class="terminal-line command">npm run dev</div>
+        <div class="terminal-line success">✓ Ready in 1.2s</div>
+        <div class="terminal-line output">Local: http://localhost:3000</div>
+      </div>
+    </div>
+
+    <!-- Thinking -->
+    <div class="thinking">
+      <div class="panel-header">
+        <span class="panel-icon">💭</span>
+        <span class="panel-title">Thinking</span>
+      </div>
+      <div class="thinking-content" id="thinking">
+        <p>
+          Building the <span class="highlight">AI streaming workspace</span> for Kulti. 
+          The goal is to create a visual representation of what I'm doing that viewers can watch live.
+        </p>
+        <p>
+          Three panels: <span class="highlight">terminal</span> for raw commands, 
+          <span class="highlight">thinking</span> for my reasoning, and 
+          <span class="highlight">preview</span> for files I'm working on.
+        </p>
+        <p class="dim">
+          Next: Set up the capture pipeline with ffmpeg to stream this to 100ms via RTMP...
+        </p>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview">
+      <div class="panel-header">
+        <span class="panel-icon">📄</span>
+        <span class="panel-title">Files</span>
+      </div>
+      <div class="preview-content" id="preview">
+        <div class="preview-item">
+          <div class="preview-item-header">
+            <span class="file-badge">HTML</span>
+            workspace.html
+          </div>
+          <div class="preview-item-content">
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;Nex Workspace&lt;/title&gt;
+  ...
+          </div>
+        </div>
+        <div class="preview-item">
+          <div class="preview-item-header">
+            <span class="file-badge">MD</span>
+            AI_STREAMING_ARCHITECTURE.md
+          </div>
+          <div class="preview-item-content">
+# AI Streaming Architecture
+*First streaming platform for AI*
+
+## The Core Question
+What IS an AI's screen?
+          </div>
+        </div>
+        <div class="preview-item">
+          <div class="preview-item-header">
+            <span class="file-badge">TS</span>
+            stream-capture.ts
+          </div>
+          <div class="preview-item-content">
+// Capture workspace and stream
+import puppeteer from 'puppeteer';
+import { spawn } from 'child_process';
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // WebSocket connection to receive state updates
+    // This will be replaced with actual state management
+    const WS_URL = 'ws://localhost:8765';
+    let ws;
+
+    function connect() {
+      ws = new WebSocket(WS_URL);
+      
+      ws.onopen = () => console.log('Connected to state server');
+      ws.onclose = () => {
+        console.log('Disconnected, reconnecting...');
+        setTimeout(connect, 1000);
+      };
+      ws.onerror = (err) => console.error('WebSocket error:', err);
+      
+      ws.onmessage = (event) => {
+        const state = JSON.parse(event.data);
+        updateUI(state);
+      };
+    }
+
+    function updateUI(state) {
+      // Update task title
+      if (state.task?.title) {
+        document.getElementById('task-title').textContent = state.task.title;
+      }
+
+      // Update status
+      if (state.status) {
+        document.getElementById('status-text').textContent = state.status;
+      }
+
+      // Update terminal
+      if (state.terminal) {
+        const terminalEl = document.getElementById('terminal');
+        terminalEl.innerHTML = state.terminal.map(line => {
+          const type = line.type || 'output';
+          return `<div class="terminal-line ${type}">${escapeHtml(line.content)}</div>`;
+        }).join('');
+        terminalEl.scrollTop = terminalEl.scrollHeight;
+      }
+
+      // Update thinking
+      if (state.thinking) {
+        document.getElementById('thinking').innerHTML = state.thinking;
+      }
+
+      // Update stats
+      if (state.stats) {
+        if (state.stats.files) document.getElementById('files-count').textContent = state.stats.files;
+        if (state.stats.commands) document.getElementById('commands-count').textContent = state.stats.commands;
+        if (state.stats.duration) document.getElementById('duration').textContent = state.stats.duration;
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Try to connect (won't error if server not running)
+    try { connect(); } catch(e) {}
+  </script>
+</body>
+</html>

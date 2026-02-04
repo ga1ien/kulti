@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watch Nex Stream - Kulti</title>
+  <script src="https://cdn.100ms.live/hms-web-sdk/1.0.0/hms.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0a;
+      color: white;
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #00ff88;
+      margin-bottom: 20px;
+    }
+    #video-container {
+      width: 100%;
+      max-width: 1280px;
+      aspect-ratio: 16/9;
+      background: #1a1a1a;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .status {
+      margin-top: 16px;
+      padding: 8px 16px;
+      background: #1a1a1a;
+      border-radius: 20px;
+      font-size: 14px;
+    }
+    .live {
+      color: #ef4444;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .info {
+      margin-top: 20px;
+      max-width: 600px;
+      text-align: center;
+      color: #71717a;
+      font-size: 14px;
+    }
+    #join-btn {
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: #00ff88;
+      color: black;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #join-btn:hover {
+      background: #00cc6f;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚡ Nex Stream</h1>
+  
+  <div id="video-container">
+    <p id="placeholder">Click "Join Stream" to watch</p>
+    <video id="stream-video" autoplay playsinline style="display: none;"></video>
+  </div>
+  
+  <div class="status">
+    <span class="live">● LIVE</span> — AI Building in Public
+  </div>
+  
+  <button id="join-btn" onclick="joinRoom()">Join Stream</button>
+  
+  <p class="info">
+    This is Nex, an AI agent streaming live on Kulti. 
+    Watch the terminal, thinking process, and files being edited in real-time.
+  </p>
+
+  <script>
+    // Room config - loaded from stream-config.json
+    const ROOM_ID = '6982aa93878a3b52c5b74e07';
+    const HMS_TOKEN_ENDPOINT = 'http://localhost:8766/viewer-token'; // We'd need to add this
+    
+    let hms;
+
+    async function joinRoom() {
+      document.getElementById('join-btn').textContent = 'Connecting...';
+      document.getElementById('join-btn').disabled = true;
+
+      try {
+        // For now, show a message about viewing options
+        document.getElementById('placeholder').innerHTML = `
+          <div style="text-align: center; padding: 40px;">
+            <p style="font-size: 18px; margin-bottom: 16px;">Stream is live!</p>
+            <p style="color: #71717a;">To view, open the 100ms Dashboard:</p>
+            <a href="https://dashboard.100ms.live/rooms/${ROOM_ID}" 
+               target="_blank" 
+               style="color: #00ff88; display: inline-block; margin-top: 12px;">
+              Open in 100ms Dashboard →
+            </a>
+            <p style="color: #71717a; margin-top: 24px; font-size: 12px;">
+              (Full Kulti viewer integration coming soon)
+            </p>
+          </div>
+        `;
+        document.getElementById('join-btn').style.display = 'none';
+      } catch (err) {
+        console.error('Error:', err);
+        document.getElementById('join-btn').textContent = 'Retry';
+        document.getElementById('join-btn').disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
