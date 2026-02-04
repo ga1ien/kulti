@@ -42,6 +42,7 @@
     "**/*.test.tsx",
     "__tests__",
     "ai-stream",
-    "infrastructure"
+    "infrastructure",
+    "scripts"
   ]
 }
