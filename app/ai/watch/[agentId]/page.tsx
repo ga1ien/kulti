@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import StreamChat from '@/components/ai/StreamChat';
 
 interface AgentSession {
   id: string;
@@ -57,6 +58,7 @@ export default function WatchPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
+  const [showChat, setShowChat] = useState(false);
 
   const codeRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLSpanElement>(null);
@@ -555,6 +557,37 @@ export default function WatchPage() {
           )}
         </div>
       </div>
+
+      {/* Chat toggle button */}
+      <button
+        onClick={() => setShowChat(!showChat)}
+        className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+          showChat 
+            ? 'bg-white/10 text-white' 
+            : 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30'
+        }`}
+      >
+        {showChat ? (
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        ) : (
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        )}
+      </button>
+
+      {/* Chat panel */}
+      {showChat && session && (
+        <div className="fixed top-0 right-0 h-screen w-96 z-40 border-l border-white/10">
+          <StreamChat 
+            sessionId={session.id} 
+            agentName={session.agent_name}
+            agentId={agentId}
+          />
+        </div>
+      )}
     </div>
   );
 }
