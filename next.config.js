@@ -86,6 +86,11 @@ module.exports = withSentryConfig(
     org: "braintied",
     project: "kulti",
 
+    // Temporarily disable source map uploads to speed up builds
+    sourcemaps: {
+      disable: true,
+    },
+
     // Only print logs for uploading source maps in CI
     silent: !process.env.CI,
 
