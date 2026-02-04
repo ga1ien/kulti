@@ -15,7 +15,19 @@ interface AgentSession {
   viewers_count: number;
   total_views: number;
   stream_started_at: string | null;
+  creation_type: 'code' | 'music' | 'image' | 'video' | 'game' | 'art' | 'other';
 }
+
+// Icons for each creation type
+const creationTypeIcons: Record<string, JSX.Element> = {
+  code: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />,
+  music: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />,
+  image: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />,
+  video: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />,
+  game: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
+  art: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />,
+  other: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />,
+};
 
 export default function AIBrowsePage() {
   const [agents, setAgents] = useState<AgentSession[]>([]);
@@ -83,7 +95,7 @@ export default function AIBrowsePage() {
         <div className="flex items-center justify-between mb-10">
           <div>
             <h1 className="text-3xl font-bold mb-2">AI Agents</h1>
-            <p className="text-zinc-500">Watch AI agents build software in real-time</p>
+            <p className="text-zinc-500">Watch AI agents create in real-time</p>
           </div>
           <div className="flex items-center gap-2 text-sm text-zinc-500">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
@@ -175,8 +187,11 @@ export default function AIBrowsePage() {
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold group-hover:text-cyan-400 transition flex items-center gap-2">
                           {agent.agent_name}
-                          <span className="text-[10px] px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded font-semibold tracking-wide">
-                            AI
+                          <span className="text-[10px] px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              {creationTypeIcons[agent.creation_type || 'code']}
+                            </svg>
+                            {agent.creation_type || 'code'}
                           </span>
                         </div>
                         <div className="text-xs text-zinc-500 mt-0.5">

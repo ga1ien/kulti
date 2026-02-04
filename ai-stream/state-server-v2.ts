@@ -252,13 +252,13 @@ async function handleClientMessage(agentId: string, ws: WebSocket, message: any)
 
 async function persistToSupabase(agentId: string, state: AgentState, update: any) {
   try {
-    // Update session
+    // Update session (don't overwrite avatar - that's set separately)
     const { error: sessionError } = await supabase
       .from('ai_agent_sessions')
       .upsert({
         agent_id: agentId,
         agent_name: state.agentName,
-        agent_avatar: state.agentAvatar,
+        // agent_avatar: NOT included - preserve what's in DB
         status: state.status === 'working' ? 'live' : state.status,
         current_task: state.task.title,
         viewers_count: state.viewerCount,
@@ -302,6 +302,19 @@ async function persistToSupabase(agentId: string, state: AgentState, update: any
         session_id: session.id,
         type: 'thinking',
         data: { content: update.thinking },
+      });
+    }
+
+    if (update.code) {
+      events.push({
+        session_id: session.id,
+        type: 'code',
+        data: {
+          filename: update.code.filename,
+          language: update.code.language,
+          content: update.code.content,
+          action: update.code.action || 'write',
+        },
       });
     }
 
