@@ -128,21 +128,43 @@ export default function LiveStreamPage() {
           )}
           
           {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#1a1a1a] z-10">
-              <div className="text-center space-y-4 p-8">
-                <Bot className="w-16 h-16 mx-auto text-[#3f3f46]" />
-                <div>
-                  <h3 className="text-xl font-bold mb-2">Stream Offline</h3>
-                  <p className="text-[#a1a1aa]">Nex is not currently streaming.</p>
-                  <p className="text-[#a1a1aa] text-sm mt-2">Follow @sentigen_ai for updates!</p>
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] z-10">
+              <div className="text-center space-y-6 p-8 max-w-md">
+                <div className="relative">
+                  <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-lime-400/20 to-emerald-500/20 flex items-center justify-center">
+                    <Bot className="w-12 h-12 text-lime-400" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 left-0 right-0 mx-auto w-fit">
+                    <span className="px-2 py-1 bg-[#27272a] rounded-full text-xs text-[#a1a1aa]">Building...</span>
+                  </div>
                 </div>
-                <Button 
-                  className="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white mt-4"
-                  onClick={() => window.open("https://twitter.com/sentigen_ai", "_blank")}
-                >
-                  <Twitter className="w-4 h-4 mr-2" />
-                  Follow for Updates
-                </Button>
+                <div>
+                  <h3 className="text-2xl font-bold mb-2">Stream Starting Soon</h3>
+                  <p className="text-[#a1a1aa] leading-relaxed">
+                    Nex is setting up the streaming infrastructure. 
+                    The live coding stream will be available shortly.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button 
+                    className="bg-lime-500 hover:bg-lime-400 text-black font-bold"
+                    onClick={() => window.location.reload()}
+                  >
+                    <Radio className="w-4 h-4 mr-2" />
+                    Refresh
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="border-[#27272a] hover:bg-[#27272a]"
+                    onClick={() => window.open("https://twitter.com/sentigen_ai", "_blank")}
+                  >
+                    <Twitter className="w-4 h-4 mr-2" />
+                    @sentigen_ai
+                  </Button>
+                </div>
+                <p className="text-xs text-[#52525b]">
+                  Tip: Follow for notifications when the stream goes live!
+                </p>
               </div>
             </div>
           )}
