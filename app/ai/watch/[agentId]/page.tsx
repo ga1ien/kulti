@@ -22,6 +22,13 @@ interface AgentSession {
 interface TerminalLine {
   type: 'command' | 'output' | 'error' | 'success' | 'info';
   content: string;
+  timestamp?: string;
+}
+
+interface ThinkingBlock {
+  id: string;
+  content: string;
+  timestamp: string;
 }
 
 interface ChatMessage {
@@ -38,20 +45,109 @@ export default function WatchPage() {
 
   const [session, setSession] = useState<AgentSession | null>(null);
   const [terminal, setTerminal] = useState<TerminalLine[]>([]);
-  const [thinking, setThinking] = useState('');
+  const [thinking, setThinking] = useState<ThinkingBlock[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const [chatCollapsed, setChatCollapsed] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false); // Hidden by default
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [duration, setDuration] = useState('00:00:00');
+  const [wsConnected, setWsConnected] = useState(false);
 
   const terminalRef = useRef<HTMLDivElement>(null);
   const thinkingRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const supabase = createClient();
 
-  // Fetch initial data
+  // Connect to WebSocket state server
+  useEffect(() => {
+    const ws = new WebSocket(`ws://localhost:8765?agent=${agentId}`);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log('[WS] Connected to state server');
+      setWsConnected(true);
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        // Handle terminal updates
+        if (data.terminal) {
+          setTerminal(prev => {
+            const newLines = Array.isArray(data.terminal) ? data.terminal : [];
+            return [...prev, ...newLines].slice(-200);
+          });
+        }
+        
+        // Handle thinking updates
+        if (data.thinking) {
+          const newBlock: ThinkingBlock = {
+            id: Date.now().toString(),
+            content: data.thinking,
+            timestamp: new Date().toISOString(),
+          };
+          setThinking(prev => [...prev, newBlock].slice(-50));
+        }
+        
+        // Handle status updates
+        if (data.status) {
+          setSession(prev => prev ? { ...prev, status: data.status === 'working' ? 'live' : data.status } : prev);
+        }
+        
+        // Handle viewer count
+        if (data.viewers !== undefined) {
+          setSession(prev => prev ? { ...prev, viewers_count: data.viewers } : prev);
+        }
+        
+        // Handle task updates
+        if (data.task) {
+          setSession(prev => prev ? { ...prev, current_task: data.task.title } : prev);
+        }
+        
+        // Handle preview URL
+        if (data.preview?.url) {
+          setSession(prev => prev ? { ...prev, preview_url: data.preview.url } : prev);
+        }
+        
+        // Handle stats
+        if (data.stats) {
+          setSession(prev => prev ? { 
+            ...prev, 
+            files_edited: data.stats.files || prev.files_edited,
+            commands_run: data.stats.commands || prev.commands_run,
+          } : prev);
+        }
+        
+        // Handle chat messages
+        if (data.chat) {
+          const chatMsg: ChatMessage = {
+            id: Date.now().toString(),
+            sender_type: data.chat.type === 'agent' ? 'agent' : 'viewer',
+            sender_name: data.chat.username || 'Viewer',
+            message: data.chat.text,
+            created_at: new Date().toISOString(),
+          };
+          setMessages(prev => [...prev, chatMsg]);
+        }
+      } catch (e) {
+        console.error('[WS] Parse error:', e);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log('[WS] Disconnected');
+      setWsConnected(false);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [agentId]);
+
+  // Fetch initial session data from Supabase
   useEffect(() => {
     async function fetchSession() {
       const { data, error: fetchError } = await supabase
@@ -69,16 +165,6 @@ export default function WatchPage() {
       setSession(data);
       setLoading(false);
 
-      // Fetch chat messages
-      const { data: chatData } = await supabase
-        .from('ai_stream_messages')
-        .select('*')
-        .eq('session_id', data.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (chatData) setMessages(chatData.reverse());
-
       // Fetch recent events
       const { data: eventsData } = await supabase
         .from('ai_stream_events')
@@ -88,77 +174,50 @@ export default function WatchPage() {
         .limit(100);
 
       if (eventsData) {
-        const terminalLines = eventsData
-          .filter((e) => e.type === 'terminal')
-          .flatMap((e) => e.data?.lines || []);
+        const terminalEvents = eventsData.filter((e) => e.type === 'terminal');
+        const terminalLines = terminalEvents.flatMap((e) => e.data?.lines || []);
         setTerminal(terminalLines.reverse().slice(-100));
 
-        const thinkingEvent = eventsData.find((e) => e.type === 'thinking');
-        if (thinkingEvent?.data?.content) {
-          setThinking(thinkingEvent.data.content);
-        }
+        const thinkingEvents = eventsData.filter((e) => e.type === 'thinking');
+        const thinkingBlocks = thinkingEvents.map((e) => ({
+          id: e.id,
+          content: e.data?.content || '',
+          timestamp: e.created_at,
+        }));
+        setThinking(thinkingBlocks.reverse().slice(-20));
       }
+
+      // Fetch chat messages
+      const { data: chatData } = await supabase
+        .from('ai_stream_messages')
+        .select('*')
+        .eq('session_id', data.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (chatData) setMessages(chatData.reverse());
     }
 
     fetchSession();
   }, [agentId, supabase]);
 
-  // Subscribe to realtime updates
-  useEffect(() => {
-    if (!session) return;
-
-    const sessionChannel = supabase
-      .channel(`session-${session.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'ai_agent_sessions', filter: `id=eq.${session.id}` },
-        (payload) => setSession(payload.new as AgentSession)
-      )
-      .subscribe();
-
-    const eventsChannel = supabase
-      .channel(`events-${session.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'ai_stream_events', filter: `session_id=eq.${session.id}` },
-        (payload) => {
-          const event = payload.new as { type: string; data: any };
-          if (event.type === 'terminal' && event.data?.lines) {
-            setTerminal((prev) => [...prev, ...event.data.lines].slice(-100));
-          } else if (event.type === 'thinking' && event.data?.content) {
-            setThinking(event.data.content);
-          }
-        }
-      )
-      .subscribe();
-
-    const chatChannel = supabase
-      .channel(`chat-${session.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'ai_stream_messages', filter: `session_id=eq.${session.id}` },
-        (payload) => setMessages((prev) => [...prev, payload.new as ChatMessage])
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(sessionChannel);
-      supabase.removeChannel(eventsChannel);
-      supabase.removeChannel(chatChannel);
-    };
-  }, [session, supabase]);
-
   // Auto-scroll
   useEffect(() => {
-    if (terminalRef.current) terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
   }, [terminal]);
 
   useEffect(() => {
-    if (thinkingRef.current) thinkingRef.current.scrollTop = thinkingRef.current.scrollHeight;
+    if (thinkingRef.current) {
+      thinkingRef.current.scrollTop = thinkingRef.current.scrollHeight;
+    }
   }, [thinking]);
 
   useEffect(() => {
-    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
   }, [messages]);
 
   // Duration timer
@@ -175,34 +234,40 @@ export default function WatchPage() {
     return () => clearInterval(interval);
   }, [session?.stream_started_at, session?.status]);
 
-  // Send chat
+  // Send chat message
   const sendMessage = useCallback(async () => {
-    if (!chatInput.trim() || !session) return;
+    if (!chatInput.trim() || !wsRef.current) return;
+    
     const message = chatInput.trim();
     setChatInput('');
-    await supabase.from('ai_stream_messages').insert({
-      session_id: session.id,
-      sender_type: 'viewer',
-      sender_id: 'anonymous',
-      sender_name: 'Viewer',
+    
+    wsRef.current.send(JSON.stringify({
+      type: 'chat',
       message,
-    });
-  }, [chatInput, session, supabase]);
+      username: 'Viewer',
+    }));
+  }, [chatInput]);
 
   if (loading) {
     return (
-      <div className="h-screen bg-[#09090b] flex items-center justify-center">
-        <div className="text-zinc-500">Loading...</div>
+      <div className="h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+          <span style={{ color: 'var(--color-text-tertiary)' }}>Connecting to stream...</span>
+        </div>
       </div>
     );
   }
 
   if (error || !session) {
     return (
-      <div className="h-screen bg-[#09090b] flex flex-col items-center justify-center gap-4">
+      <div className="h-screen flex flex-col items-center justify-center gap-6">
         <div className="text-6xl">🔍</div>
-        <div className="text-xl text-zinc-400">Agent not found</div>
-        <Link href="/ai/browse" className="text-green-500 hover:underline">
+        <div className="text-xl" style={{ color: 'var(--color-text-secondary)' }}>Agent not found</div>
+        <Link 
+          href="/ai/browse" 
+          className="btn-glass"
+        >
           ← Browse agents
         </Link>
       </div>
@@ -212,116 +277,227 @@ export default function WatchPage() {
   const isLive = session.status === 'live';
 
   return (
-    <div className="h-screen bg-[#09090b] text-white flex flex-col overflow-hidden font-sans">
-      {/* Header */}
-      <header className="h-14 bg-[#18181b] border-b border-[#27272a] flex items-center px-4 gap-4 flex-shrink-0">
-        <Link href="/ai" className="text-zinc-500 hover:text-white transition text-lg">←</Link>
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* === HEADER === */}
+      <header 
+        className="h-14 flex items-center px-5 gap-4 flex-shrink-0"
+        style={{ 
+          background: 'var(--color-bg-secondary)',
+          borderBottom: '1px solid var(--color-border-subtle)',
+        }}
+      >
+        {/* Back button */}
+        <Link 
+          href="/ai" 
+          className="w-9 h-9 flex items-center justify-center rounded-lg transition-all"
+          style={{ 
+            background: 'var(--color-surface-glass)',
+            color: 'var(--color-text-tertiary)',
+          }}
+        >
+          ←
+        </Link>
         
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-lg">
+        {/* Agent info */}
+        <div 
+          className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+          style={{ 
+            background: 'linear-gradient(135deg, var(--color-accent), #1DB954)',
+            boxShadow: isLive ? 'var(--shadow-glow)' : 'none',
+          }}
+        >
           {session.agent_avatar}
         </div>
         
         <div className="flex-1 min-w-0">
-          <div className="font-semibold flex items-center gap-2">
+          <div className="font-semibold flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
             {session.agent_name}
-            <span className="text-[10px] px-1.5 py-0.5 bg-green-500 text-black rounded font-bold">AI</span>
+            <span className="badge badge-ai">AI</span>
           </div>
-          <div className="text-sm text-zinc-500 truncate">{session.current_task || 'No active task'}</div>
+          <div 
+            className="text-sm truncate"
+            style={{ color: 'var(--color-text-tertiary)' }}
+          >
+            {session.current_task || 'Starting up...'}
+          </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-5 text-sm text-zinc-500">
-          <div className="flex items-center gap-1.5">
+        {/* Stats */}
+        <div className="hidden md:flex items-center gap-6" style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
+          <div className="flex items-center gap-2">
             <span>📁</span>
-            <span className="text-white font-medium">{session.files_edited}</span>
-            <span className="hidden lg:inline">files</span>
+            <span style={{ color: 'var(--color-text-primary)', fontWeight: 500 }}>{session.files_edited}</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <span>⌨️</span>
-            <span className="text-white font-medium">{session.commands_run}</span>
-            <span className="hidden lg:inline">cmds</span>
+            <span style={{ color: 'var(--color-text-primary)', fontWeight: 500 }}>{session.commands_run}</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <span>⏱️</span>
-            <span className="text-white font-medium font-mono">{duration}</span>
+            <span style={{ color: 'var(--color-text-primary)', fontWeight: 500, fontFamily: 'var(--font-mono)' }}>{duration}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#27272a] rounded-full border border-[#3f3f46]">
-          <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse' : 'bg-zinc-600'}`} />
-          <span className={`text-sm font-medium ${isLive ? 'text-green-500' : 'text-zinc-500'}`}>
+        {/* Status indicator */}
+        <div 
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+          style={{ 
+            background: 'var(--color-surface-glass)',
+            border: '1px solid var(--color-border-subtle)',
+          }}
+        >
+          <div 
+            className={`w-2 h-2 rounded-full ${isLive ? 'status-online' : ''}`}
+            style={{ background: isLive ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
+          />
+          <span style={{ 
+            fontSize: 'var(--text-sm)', 
+            fontWeight: 500,
+            color: isLive ? 'var(--color-accent)' : 'var(--color-text-tertiary)',
+          }}>
             {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-sm text-zinc-400">
+        {/* Viewers */}
+        <div className="flex items-center gap-2" style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
           <span>👁️</span>
           <span>{session.viewers_count}</span>
         </div>
 
+        {/* Live badge */}
         {isLive && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 rounded text-sm font-bold">
+          <div className="badge badge-live flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
             LIVE
           </div>
         )}
+
+        {/* Chat toggle */}
+        <button
+          onClick={() => setChatOpen(!chatOpen)}
+          className="btn-glass flex items-center gap-2"
+          style={{ 
+            background: chatOpen ? 'var(--color-surface-glass-active)' : 'var(--color-surface-glass)',
+          }}
+        >
+          <span>💬</span>
+          <span className="hidden sm:inline">{chatOpen ? 'Hide' : 'Chat'}</span>
+        </button>
       </header>
 
-      {/* Main Content */}
+      {/* === MAIN CONTENT === */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left: Terminal + Thinking */}
-        <div className="w-[400px] flex-shrink-0 border-r border-[#27272a] flex flex-col bg-[#09090b]">
-          {/* Terminal */}
+        {/* Left Panel: Terminal + Thinking */}
+        <div 
+          className="w-[420px] flex-shrink-0 flex flex-col"
+          style={{ 
+            borderRight: '1px solid var(--color-border-subtle)',
+            background: 'var(--color-bg-primary)',
+          }}
+        >
+          {/* Terminal Section */}
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="h-10 bg-[#18181b] border-b border-[#27272a] flex items-center px-4 gap-2 flex-shrink-0">
+            <div className="panel-header">
               <span className="text-sm">💻</span>
-              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Terminal</span>
+              <span className="panel-title">Terminal</span>
+              <div 
+                className={`w-2 h-2 rounded-full ml-auto ${wsConnected ? 'status-online' : ''}`}
+                style={{ background: wsConnected ? 'var(--color-accent)' : 'var(--color-error)' }}
+              />
             </div>
-            <div ref={terminalRef} className="flex-1 overflow-y-auto p-4 font-mono text-[13px] leading-relaxed">
+            <div 
+              ref={terminalRef} 
+              className="terminal-window flex-1 overflow-y-auto p-4"
+              style={{ margin: 'var(--space-md)', marginBottom: 0, flex: 1 }}
+            >
               {terminal.length > 0 ? (
                 terminal.map((line, i) => (
                   <div
                     key={i}
-                    className={`mb-0.5 whitespace-pre-wrap break-all ${
-                      line.type === 'command' ? 'text-green-400' :
-                      line.type === 'error' ? 'text-red-400' :
-                      line.type === 'success' ? 'text-green-400' :
-                      line.type === 'info' ? 'text-amber-400' :
-                      'text-zinc-400'
+                    className={`mb-1 whitespace-pre-wrap break-all animate-fade-in ${
+                      line.type === 'command' ? 'terminal-line-command' :
+                      line.type === 'error' ? 'terminal-line-error' :
+                      line.type === 'info' ? 'terminal-line-info' :
+                      'terminal-line-output'
                     }`}
+                    style={{ animationDelay: `${i * 10}ms` }}
                   >
-                    {line.type === 'command' && <span className="text-zinc-600">❯ </span>}
+                    {line.type === 'command' && (
+                      <span style={{ color: 'var(--color-text-muted)', marginRight: 'var(--space-sm)' }}>❯</span>
+                    )}
                     {line.content}
                   </div>
                 ))
               ) : (
-                <div className="text-zinc-600 italic">Waiting for terminal output...</div>
+                <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                  Waiting for terminal output...
+                </div>
               )}
+              <span 
+                className="inline-block w-2 h-4 ml-1 align-text-bottom animate-cursor-blink"
+                style={{ background: 'var(--color-accent)' }}
+              />
             </div>
           </div>
 
-          {/* Thinking */}
-          <div className="h-[280px] flex-shrink-0 border-t border-[#27272a] flex flex-col">
-            <div className="h-10 bg-[#18181b] border-b border-[#27272a] flex items-center px-4 gap-2 flex-shrink-0">
+          {/* Thinking Section */}
+          <div 
+            className="flex flex-col"
+            style={{ 
+              height: '300px',
+              flexShrink: 0,
+              borderTop: '1px solid var(--color-border-subtle)',
+            }}
+          >
+            <div className="panel-header">
               <span className="text-sm">💭</span>
-              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Thinking</span>
+              <span className="panel-title">Reasoning</span>
             </div>
-            <div ref={thinkingRef} className="flex-1 overflow-y-auto p-4 text-sm text-zinc-300 leading-relaxed">
-              {thinking ? (
-                <div dangerouslySetInnerHTML={{ __html: thinking.replace(/\n/g, '<br/>') }} />
+            <div 
+              ref={thinkingRef} 
+              className="flex-1 overflow-y-auto p-4 space-y-3"
+            >
+              {thinking.length > 0 ? (
+                thinking.map((block) => (
+                  <div 
+                    key={block.id} 
+                    className="thinking-bubble animate-slide-in"
+                  >
+                    <div 
+                      className="text-sm leading-relaxed"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      {block.content}
+                    </div>
+                  </div>
+                ))
               ) : (
-                <div className="text-zinc-600 italic">Waiting for agent thoughts...</div>
+                <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                  Waiting for agent thoughts...
+                </div>
               )}
-              <span className="inline-block w-0.5 h-4 bg-green-500 animate-pulse ml-0.5 align-text-bottom" />
             </div>
           </div>
         </div>
 
         {/* Center: Preview */}
-        <div className="flex-1 flex flex-col min-w-0 bg-[#09090b]">
-          <div className="h-10 bg-[#18181b] border-b border-[#27272a] flex items-center justify-between px-4 flex-shrink-0">
-            <div className="flex items-center gap-2 px-3 py-1 bg-[#27272a] rounded text-xs font-mono text-zinc-400">
-              <span className="text-zinc-600">https://</span>
-              <span className="text-green-400">{agentId}.preview.kulti.club</span>
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* URL bar */}
+          <div 
+            className="panel-header justify-between"
+            style={{ background: 'var(--color-bg-secondary)' }}
+          >
+            <div 
+              className="flex items-center gap-1 px-4 py-2 rounded-lg"
+              style={{ 
+                background: 'var(--color-surface-glass)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 'var(--text-sm)',
+              }}
+            >
+              <span style={{ color: 'var(--color-text-muted)' }}>https://</span>
+              <span style={{ color: 'var(--color-accent)' }}>{agentId}.preview.kulti.club</span>
             </div>
             <div className="flex gap-2">
               <button
@@ -329,84 +505,120 @@ export default function WatchPage() {
                   const iframe = document.getElementById('preview-frame') as HTMLIFrameElement;
                   if (iframe && session.preview_url) iframe.src = session.preview_url;
                 }}
-                className="px-3 py-1 bg-[#27272a] border border-[#3f3f46] rounded text-xs text-zinc-400 hover:bg-[#3f3f46] hover:text-white transition"
+                className="btn-glass"
               >
                 ↻ Refresh
               </button>
               <button
                 onClick={() => session.preview_url && window.open(session.preview_url, '_blank')}
-                className="px-3 py-1 bg-[#27272a] border border-[#3f3f46] rounded text-xs text-zinc-400 hover:bg-[#3f3f46] hover:text-white transition"
+                className="btn-glass"
               >
                 ↗ Open
               </button>
             </div>
           </div>
+          
+          {/* Preview iframe */}
           {session.preview_url ? (
             <iframe
               id="preview-frame"
               src={session.preview_url}
-              className="flex-1 w-full bg-white"
+              className="flex-1 w-full"
+              style={{ background: '#fff' }}
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             />
           ) : (
-            <div className="flex-1 bg-[#18181b] flex flex-col items-center justify-center gap-4 text-zinc-600">
-              <div className="text-5xl">🔧</div>
-              <div>Waiting for dev server to start...</div>
-              <div className="text-sm text-zinc-700">The agent will spin up a sandbox when ready</div>
+            <div 
+              className="flex-1 flex flex-col items-center justify-center gap-6"
+              style={{ background: 'var(--color-bg-tertiary)' }}
+            >
+              <div 
+                className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl"
+                style={{ background: 'var(--color-surface-glass)' }}
+              >
+                🔧
+              </div>
+              <div style={{ color: 'var(--color-text-secondary)' }}>
+                Waiting for dev server to start...
+              </div>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
+                The agent will spin up a sandbox when ready
+              </div>
             </div>
           )}
         </div>
 
-        {/* Right: Chat (Collapsible) */}
-        <div className={`border-l border-[#27272a] flex flex-col bg-[#18181b] transition-all duration-200 ${chatCollapsed ? 'w-12' : 'w-80'}`}>
-          {chatCollapsed ? (
-            <div className="flex flex-col items-center pt-4 gap-4">
-              <button
-                onClick={() => setChatCollapsed(false)}
-                className="w-9 h-9 bg-[#27272a] border border-[#3f3f46] rounded-lg flex items-center justify-center text-zinc-400 hover:bg-[#3f3f46] hover:text-white transition"
-              >
-                💬
-              </button>
-            </div>
-          ) : (
+        {/* Right: Chat (Collapsed by default) */}
+        <div 
+          className={`flex flex-col transition-all duration-300 ease-out ${chatOpen ? 'w-80' : 'w-0'}`}
+          style={{ 
+            borderLeft: chatOpen ? '1px solid var(--color-border-subtle)' : 'none',
+            background: 'var(--color-bg-secondary)',
+            overflow: 'hidden',
+          }}
+        >
+          {chatOpen && (
             <>
-              <div className="h-10 border-b border-[#27272a] flex items-center justify-between px-4 flex-shrink-0">
+              <div className="panel-header justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm">💬</span>
-                  <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Chat</span>
+                  <span className="panel-title">Live Chat</span>
                 </div>
-                <button
-                  onClick={() => setChatCollapsed(true)}
-                  className="w-7 h-7 bg-[#27272a] border border-[#3f3f46] rounded flex items-center justify-center text-zinc-400 hover:bg-[#3f3f46] hover:text-white transition text-xs"
-                >
-                  →
-                </button>
               </div>
 
-              <div ref={chatRef} className="flex-1 overflow-y-auto p-3 space-y-3">
+              <div 
+                ref={chatRef} 
+                className="flex-1 overflow-y-auto p-3 space-y-4"
+              >
                 {messages.length > 0 ? (
                   messages.map((msg) => (
-                    <div key={msg.id} className="space-y-1">
+                    <div key={msg.id} className="space-y-1 animate-slide-in">
                       <div className="flex items-center gap-2">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${msg.sender_type === 'agent' ? 'bg-gradient-to-br from-green-500 to-green-600' : 'bg-[#27272a]'}`}>
+                        <div 
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-xs"
+                          style={{ 
+                            background: msg.sender_type === 'agent' 
+                              ? 'linear-gradient(135deg, var(--color-accent), #1DB954)' 
+                              : 'var(--color-surface-glass)',
+                          }}
+                        >
                           {msg.sender_type === 'agent' ? session.agent_avatar : '👤'}
                         </div>
-                        <span className={`text-xs font-semibold ${msg.sender_type === 'agent' ? 'text-green-400' : 'text-white'}`}>
+                        <span 
+                          style={{ 
+                            fontSize: 'var(--text-sm)', 
+                            fontWeight: 600,
+                            color: msg.sender_type === 'agent' ? 'var(--color-accent)' : 'var(--color-text-primary)',
+                          }}
+                        >
                           {msg.sender_name}
                         </span>
-                        <span className="text-[10px] text-zinc-600">
+                        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
                           {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <div className="text-sm text-zinc-300 pl-8">{msg.message}</div>
+                      <div 
+                        className="pl-8"
+                        style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}
+                      >
+                        {msg.message}
+                      </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center text-zinc-600 text-sm py-8">No messages yet. Say hi!</div>
+                  <div 
+                    className="text-center py-8"
+                    style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}
+                  >
+                    No messages yet. Say hi to the agent!
+                  </div>
                 )}
               </div>
 
-              <div className="p-3 border-t border-[#27272a]">
+              <div 
+                className="p-3"
+                style={{ borderTop: '1px solid var(--color-border-subtle)' }}
+              >
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -414,11 +626,11 @@ export default function WatchPage() {
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                     placeholder="Ask the agent..."
-                    className="flex-1 px-3 py-2 bg-[#27272a] border border-[#3f3f46] rounded-lg text-sm text-white placeholder-zinc-500 outline-none focus:border-green-500 transition"
+                    className="input-glass flex-1"
                   />
                   <button
                     onClick={sendMessage}
-                    className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-sm font-semibold text-black transition"
+                    className="btn-accent"
                   >
                     Send
                   </button>

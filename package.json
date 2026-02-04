@@ -47,6 +47,7 @@
     "@100mslive/react-sdk": "^0.10.39",
     "@100mslive/server-sdk": "^0.3.0",
     "@anthropic-ai/sdk": "^0.68.0",
+    "@e2b/code-interpreter": "^2.3.3",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-dialog": "^1.1.15",
