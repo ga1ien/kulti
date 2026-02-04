@@ -6,6 +6,10 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const NEX_API_KEY = process.env.NEX_STREAM_API_KEY || "nex-stream-2026"
 const NEX_SESSION_ID = "e8191d58-071c-4ead-a6cb-b6a708876e35"
 
+// Create untyped client for stream_state access
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getSupabase = () => createClient<any, any, any>(supabaseUrl, supabaseServiceKey)
+
 // Default state
 const defaultState = {
   terminal: [] as string[],
@@ -17,22 +21,25 @@ const defaultState = {
   chat: [] as Array<{ id: string; username: string; message: string; is_nex: boolean; time: string }>
 }
 
-async function getState(supabase: ReturnType<typeof createClient>): Promise<typeof defaultState> {
+type StreamState = typeof defaultState
+
+async function getState(): Promise<StreamState> {
+  const supabase = getSupabase()
   const { data } = await supabase
     .from("sessions")
     .select("stream_state")
     .eq("id", NEX_SESSION_ID)
     .single()
   
-  const row = data as { stream_state?: typeof defaultState } | null
-  if (!row || !row.stream_state) return { ...defaultState }
-  return row.stream_state
+  if (!data?.stream_state) return { ...defaultState }
+  return data.stream_state as StreamState
 }
 
-async function setState(supabase: ReturnType<typeof createClient>, state: typeof defaultState) {
+async function setState(state: StreamState) {
+  const supabase = getSupabase()
   await supabase
     .from("sessions")
-    .update({ stream_state: state } as any)
+    .update({ stream_state: state })
     .eq("id", NEX_SESSION_ID)
 }
 
@@ -43,13 +50,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
     const body = await request.json()
     const { event, payload } = body
     const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
 
     // Get current state
-    let state = await getState(supabase)
+    let state = await getState()
 
     // Apply update
     switch (event) {
@@ -84,7 +90,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Save state
-    await setState(supabase, state)
+    await setState(state)
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -95,8 +101,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-    const state = await getState(supabase)
+    const state = await getState()
     
     return NextResponse.json({ 
       state: {
@@ -117,7 +122,6 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
     const body = await request.json()
     const { username, message } = body
     
@@ -126,7 +130,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-    let state = await getState(supabase)
+    const state = await getState()
     
     state.chat = [...(state.chat || []).slice(-99), {
       id: Date.now().toString(),
@@ -136,7 +140,7 @@ export async function PUT(request: NextRequest) {
       time
     }]
     
-    await setState(supabase, state)
+    await setState(state)
 
     return NextResponse.json({ success: true })
   } catch (error) {
