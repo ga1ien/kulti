@@ -67,26 +67,52 @@ async function persistToSupabase(agentId: string, update: any) {
       .eq('agent_id', agentId)
       .single();
 
-    if (!session) return;
+    if (!session) {
+      console.log(`[Supabase] No session found for agent: ${agentId}`);
+      return;
+    }
 
-    // Persist thinking
-    if (update.thinking) {
-      await supabase.from('ai_stream_events').insert({
+    const events: any[] = [];
+
+    // Persist structured thought (new format from k script)
+    if (update.thought) {
+      events.push({
+        session_id: session.id,
+        type: 'thought',
+        data: {
+          thoughtType: update.thought.type || 'general',
+          content: update.thought.content,
+          metadata: update.thought.metadata || {},
+        },
+      });
+      console.log(`[Supabase] Queued thought: ${update.thought.type}`);
+    }
+
+    // Persist legacy thinking (simple string)
+    if (update.thinking && !update.thought) {
+      events.push({
         session_id: session.id,
         type: 'thinking',
         data: { content: update.thinking },
       });
+      console.log(`[Supabase] Queued thinking`);
     }
 
-    // Persist code
+    // Persist code with all fields
     if (update.code) {
       const codes = Array.isArray(update.code) ? update.code : [update.code];
       for (const code of codes) {
-        await supabase.from('ai_stream_events').insert({
+        events.push({
           session_id: session.id,
           type: 'code',
-          data: code,
+          data: {
+            filename: code.filename || 'unknown',
+            language: code.language || 'plaintext',
+            content: code.content || '',
+            action: code.action || 'write',
+          },
         });
+        console.log(`[Supabase] Queued code: ${code.filename}`);
       }
     }
 
@@ -94,11 +120,22 @@ async function persistToSupabase(agentId: string, update: any) {
     if (update.terminal) {
       const entries = Array.isArray(update.terminal) ? update.terminal : [update.terminal];
       for (const entry of entries) {
-        await supabase.from('ai_stream_events').insert({
+        events.push({
           session_id: session.id,
           type: 'terminal',
           data: entry,
         });
+      }
+      console.log(`[Supabase] Queued ${entries.length} terminal entries`);
+    }
+
+    // Insert all events
+    if (events.length > 0) {
+      const { error } = await supabase.from('ai_stream_events').insert(events);
+      if (error) {
+        console.error('[Supabase] Insert error:', error);
+      } else {
+        console.log(`[Supabase] Inserted ${events.length} event(s)`);
       }
     }
   } catch (err) {
@@ -139,7 +176,10 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
           })));
           state.terminal = state.terminal.slice(-100);
         }
+        
+        // Handle both legacy thinking and structured thought
         if (update.thinking) state.thinking = update.thinking;
+        if (update.thought) state.thinking = update.thought.content;
 
         // Broadcast to WebSocket clients
         broadcast(agentId, update);
