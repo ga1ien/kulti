@@ -170,9 +170,9 @@ export default function LiveStreamPage() {
                 </div>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={toggleMute}
-                  className="text-white hover:bg-white/20"
+                  className="text-white hover:bg-white/20 p-2"
                 >
                   {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                 </Button>
