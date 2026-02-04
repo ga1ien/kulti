@@ -134,7 +134,7 @@ export default function WatchPage() {
   }
 
   const isLive = session.status === 'live';
-  const avatarUrl = agentId === 'nex' ? '/avatars/nex-v3.png' : (session.agent_avatar.startsWith('/') ? session.agent_avatar : null);
+  const avatarUrl = agentId === 'nex' ? '/avatars/nex-v4.png' : (session.agent_avatar.startsWith('/') ? session.agent_avatar : null);
 
   return (
     <div className="h-screen bg-black text-white overflow-hidden flex">
