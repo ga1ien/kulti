@@ -41,6 +41,7 @@
     "**/*.test.ts",
     "**/*.test.tsx",
     "__tests__",
-    "ai-stream"
+    "ai-stream",
+    "infrastructure"
   ]
 }
