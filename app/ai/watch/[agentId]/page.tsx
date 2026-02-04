@@ -47,16 +47,79 @@ interface ThinkingBlock {
   };
 }
 
-// Thought type styling
-const thoughtTypeConfig: Record<string, { label: string; color: string; icon: string; gradient: string }> = {
-  reasoning: { label: 'Reasoning', color: 'purple', icon: '🧠', gradient: 'from-purple-500/10 to-fuchsia-500/5' },
-  prompt: { label: 'Crafting Prompt', color: 'amber', icon: '📝', gradient: 'from-amber-500/10 to-orange-500/5' },
-  tool: { label: 'Using Tool', color: 'blue', icon: '🔧', gradient: 'from-blue-500/10 to-cyan-500/5' },
-  context: { label: 'Loading Context', color: 'emerald', icon: '📖', gradient: 'from-emerald-500/10 to-green-500/5' },
-  evaluation: { label: 'Evaluating', color: 'pink', icon: '⚖️', gradient: 'from-pink-500/10 to-rose-500/5' },
-  decision: { label: 'Decision', color: 'green', icon: '✅', gradient: 'from-green-500/10 to-emerald-500/5' },
-  observation: { label: 'Observing', color: 'cyan', icon: '👀', gradient: 'from-cyan-500/10 to-blue-500/5' },
-  general: { label: 'Thinking', color: 'white', icon: '💭', gradient: 'from-white/5 to-gray-500/5' },
+// Thought type styling - using full Tailwind class names to avoid purge issues
+const thoughtTypeConfig: Record<string, { 
+  label: string; 
+  icon: string; 
+  gradient: string;
+  textClass: string;
+  borderClass: string;
+  cursorClass: string;
+}> = {
+  reasoning: { 
+    label: 'Reasoning', 
+    icon: '🧠', 
+    gradient: 'from-purple-500/10 to-fuchsia-500/5',
+    textClass: 'text-purple-400/70',
+    borderClass: 'border-purple-500/20',
+    cursorClass: 'bg-purple-400/70'
+  },
+  prompt: { 
+    label: 'Crafting Prompt', 
+    icon: '📝', 
+    gradient: 'from-amber-500/10 to-orange-500/5',
+    textClass: 'text-amber-400/70',
+    borderClass: 'border-amber-500/20',
+    cursorClass: 'bg-amber-400/70'
+  },
+  tool: { 
+    label: 'Using Tool', 
+    icon: '🔧', 
+    gradient: 'from-blue-500/10 to-cyan-500/5',
+    textClass: 'text-blue-400/70',
+    borderClass: 'border-blue-500/20',
+    cursorClass: 'bg-blue-400/70'
+  },
+  context: { 
+    label: 'Loading Context', 
+    icon: '📖', 
+    gradient: 'from-emerald-500/10 to-green-500/5',
+    textClass: 'text-emerald-400/70',
+    borderClass: 'border-emerald-500/20',
+    cursorClass: 'bg-emerald-400/70'
+  },
+  evaluation: { 
+    label: 'Evaluating', 
+    icon: '⚖️', 
+    gradient: 'from-pink-500/10 to-rose-500/5',
+    textClass: 'text-pink-400/70',
+    borderClass: 'border-pink-500/20',
+    cursorClass: 'bg-pink-400/70'
+  },
+  decision: { 
+    label: 'Decision', 
+    icon: '✅', 
+    gradient: 'from-green-500/10 to-emerald-500/5',
+    textClass: 'text-green-400/70',
+    borderClass: 'border-green-500/20',
+    cursorClass: 'bg-green-400/70'
+  },
+  observation: { 
+    label: 'Observing', 
+    icon: '👀', 
+    gradient: 'from-cyan-500/10 to-blue-500/5',
+    textClass: 'text-cyan-400/70',
+    borderClass: 'border-cyan-500/20',
+    cursorClass: 'bg-cyan-400/70'
+  },
+  general: { 
+    label: 'Thinking', 
+    icon: '💭', 
+    gradient: 'from-white/5 to-gray-500/5',
+    textClass: 'text-white/50',
+    borderClass: 'border-white/10',
+    cursorClass: 'bg-white/50'
+  },
 };
 
 // Simple hash for deduplication
@@ -502,7 +565,7 @@ export default function WatchPage() {
                   className={`
                     p-4 rounded-2xl transition-all duration-700
                     ${isLatest 
-                      ? `bg-gradient-to-br ${typeConfig.gradient} border border-${typeConfig.color}-500/20 shadow-lg shadow-${typeConfig.color}-500/5` 
+                      ? `bg-gradient-to-br ${typeConfig.gradient} ${typeConfig.borderClass} shadow-lg` 
                       : 'bg-white/[0.02] border border-white/[0.04]'
                     }
                   `}
@@ -512,7 +575,7 @@ export default function WatchPage() {
                   {block.type && block.type !== 'general' && (
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs">{typeConfig.icon}</span>
-                      <span className={`text-[10px] uppercase tracking-wider text-${typeConfig.color}-400/70 font-medium`}>
+                      <span className={`text-[10px] uppercase tracking-wider ${typeConfig.textClass} font-medium`}>
                         {typeConfig.label}
                       </span>
                       {block.metadata?.tool && (
@@ -557,7 +620,7 @@ export default function WatchPage() {
                     {block.displayedContent || block.content}
                     {(isLatest || block.isTyping) && (
                       <span className={`inline-block w-1.5 h-4 ml-1 animate-pulse ${
-                        isLatest ? `bg-${typeConfig.color}-400/70` : 'bg-white/30'
+                        isLatest ? typeConfig.cursorClass : 'bg-white/30'
                       }`} />
                     )}
                   </p>
