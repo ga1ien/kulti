@@ -166,11 +166,30 @@ export default function WatchPage() {
     if (data.preview?.url) setSession(prev => prev ? { ...prev, preview_url: data.preview.url } : prev);
   }, [typeCode]);
 
-  // WebSocket for local dev
+  // WebSocket connection (local dev or production)
   useEffect(() => {
-    if (typeof window === 'undefined' || window.location.hostname !== 'localhost') return;
-    const ws = new WebSocket(`ws://localhost:8765?agent=${agentId}`);
-    ws.onmessage = (e) => { try { handleStreamUpdate(JSON.parse(e.data)); } catch {} };
+    if (typeof window === 'undefined') return;
+    
+    // Use local WebSocket for localhost, production for deployed
+    const isLocal = window.location.hostname === 'localhost';
+    const wsUrl = isLocal 
+      ? `ws://localhost:8765?agent=${agentId}`
+      : `wss://kulti-stream.fly.dev?agent=${agentId}`;
+    
+    console.log('[WS] Connecting to:', wsUrl);
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => console.log('[WS] Connected');
+    ws.onmessage = (e) => { 
+      try { 
+        handleStreamUpdate(JSON.parse(e.data)); 
+      } catch (err) {
+        console.error('[WS] Parse error:', err);
+      }
+    };
+    ws.onerror = (e) => console.error('[WS] Error:', e);
+    ws.onclose = () => console.log('[WS] Disconnected');
+    
     return () => ws.close();
   }, [agentId, handleStreamUpdate]);
 
@@ -461,6 +480,7 @@ export default function WatchPage() {
               )}
             </div>
           ) : (
+            /* Preview view */
             <div className="h-full p-6">
               {session.preview_url ? (
                 <div className="h-full rounded-xl overflow-hidden bg-white">

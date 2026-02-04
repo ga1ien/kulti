@@ -1,27 +1,53 @@
 #!/bin/bash
-# Stream updates to Kulti state server
-# Usage: ./nex-stream.sh "terminal message" "thinking text" [type: command|output|success|error|info]
+# Nex streaming helpers - makes it easy to stream thoughts, code, terminal, and status
 
-TERMINAL_MSG="$1"
-THINKING="$2"
-TYPE="${3:-output}"
+STREAM_URL="http://localhost:8766"
+AGENT_ID="nex"
 
-JSON='{
-  "agentId": "nex",
-  "terminalAppend": true'
+case "$1" in
+  think|t)
+    # Stream a thought
+    curl -s -X POST "$STREAM_URL" \
+      -H "Content-Type: application/json" \
+      -d "{\"agentId\": \"$AGENT_ID\", \"thinking\": \"$2\"}" > /dev/null
+    echo "💭 Thought streamed"
+    ;;
+  
+  terminal|term)
+    # Stream terminal output
+    curl -s -X POST "$STREAM_URL" \
+      -H "Content-Type: application/json" \
+      -d "{\"agentId\": \"$AGENT_ID\", \"terminal\": [{\"type\": \"info\", \"content\": \"$2\"}]}" > /dev/null
+    echo "📟 Terminal streamed"
+    ;;
+  
+  status|s)
+    # Update current task/status
+    source "$(dirname "$0")/../.env.local"
+    curl -s -X PATCH "https://${NEXT_PUBLIC_SUPABASE_URL#https://}/rest/v1/ai_agent_sessions?agent_id=eq.$AGENT_ID" \
+      -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+      -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+      -H "Content-Type: application/json" \
+      -d "{\"current_task\": \"$2\"}" > /dev/null
+    echo "📊 Status updated: $2"
+    ;;
+  
+  code|c)
+    # Stream a code file (uses stream.ts)
+    npx tsx "$(dirname "$0")/stream.ts" code "$2" "${3:-write}"
+    ;;
+  
+  *)
+    echo "Nex Stream Helper"
+    echo ""
+    echo "Usage:"
+    echo "  $0 think \"your thought\"     - Stream a thought"
+    echo "  $0 terminal \"output\"         - Stream terminal output"  
+    echo "  $0 status \"what you're doing\" - Update status header"
+    echo "  $0 code <filepath> [action]  - Stream code file"
+    echo ""
+    echo "Shortcuts: t, term, s, c"
+    ;;
+esac
 
-if [ -n "$TERMINAL_MSG" ]; then
-  JSON="$JSON, \"terminal\": [{\"type\": \"$TYPE\", \"content\": \"$TERMINAL_MSG\"}]"
-fi
-
-if [ -n "$THINKING" ]; then
-  JSON="$JSON, \"thinking\": \"$THINKING\""
-fi
-
-JSON="$JSON}"
-
-curl -s -X POST http://localhost:8766 \
-  -H "Content-Type: application/json" \
-  -d "$JSON" > /dev/null
-
-echo "✓ Streamed"
+# Auto-stream test - this should appear automatically

@@ -4,7 +4,10 @@
   "description": "AI Streaming infrastructure for Kulti",
   "scripts": {
     "server": "tsx state-server-v2.ts",
-    "start": "tsx start-stream.ts",
+    "server:prod": "node dist/state-server-prod.js",
+    "build": "tsc state-server-prod.ts --outDir dist --esModuleInterop --module commonjs --target ES2020 --skipLibCheck",
+    "start": "npm run build && npm run server:prod",
+    "dev": "tsx state-server-v2.ts",
     "test": "tsx test-stream.ts"
   },
   "dependencies": {

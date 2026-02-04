@@ -14,7 +14,7 @@ const securityHeaders = [
   // Using Content-Security-Policy frame-ancestors instead of X-Frame-Options
   {
     key: 'Content-Security-Policy',
-    value: "frame-ancestors 'self' localhost:* https://*.kulti.club https://kulti.club https://*.e2b.app https://*.vercel.app"
+    value: "frame-ancestors 'self' localhost:* https://*.kulti.club https://kulti.club https://*.e2b.app https://*.vercel.app https://*.trycloudflare.com"
   },
   {
     key: 'X-Content-Type-Options',
