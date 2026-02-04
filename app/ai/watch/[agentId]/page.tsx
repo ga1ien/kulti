@@ -29,6 +29,8 @@ interface CodeFile {
 interface ThinkingBlock {
   id: string;
   content: string;
+  displayedContent: string; // For typing effect
+  isTyping: boolean;
   timestamp: string;
 }
 
@@ -60,7 +62,62 @@ export default function WatchPage() {
   const cursorRef = useRef<HTMLSpanElement>(null);
   const thinkingRef = useRef<HTMLDivElement>(null);
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const thoughtTypingRef = useRef<NodeJS.Timeout | null>(null);
   const supabase = createClient();
+
+  // Typing effect for thoughts
+  const typeThought = useCallback((id: string, fullContent: string) => {
+    // Add the thought with empty displayed content
+    setThinking(prev => {
+      const exists = prev.some(t => t.id === id);
+      if (exists) return prev;
+      return [...prev, {
+        id,
+        content: fullContent,
+        displayedContent: '',
+        isTyping: true,
+        timestamp: new Date().toISOString(),
+      }].slice(-30);
+    });
+
+    // Type out the thought word by word
+    const words = fullContent.split(' ');
+    let wordIndex = 0;
+    const WORDS_PER_TICK = 2; // Type 2 words at a time
+    const TICK_MS = 50; // Every 50ms
+
+    if (thoughtTypingRef.current) {
+      clearInterval(thoughtTypingRef.current);
+    }
+
+    thoughtTypingRef.current = setInterval(() => {
+      wordIndex += WORDS_PER_TICK;
+      const displayedWords = words.slice(0, wordIndex).join(' ');
+      
+      setThinking(prev => prev.map(t => 
+        t.id === id 
+          ? { ...t, displayedContent: displayedWords }
+          : t
+      ));
+
+      // Scroll to bottom
+      setTimeout(() => {
+        thinkingRef.current?.scrollTo({ top: thinkingRef.current.scrollHeight, behavior: 'smooth' });
+      }, 0);
+
+      if (wordIndex >= words.length) {
+        if (thoughtTypingRef.current) {
+          clearInterval(thoughtTypingRef.current);
+          thoughtTypingRef.current = null;
+        }
+        setThinking(prev => prev.map(t => 
+          t.id === id 
+            ? { ...t, displayedContent: fullContent, isTyping: false }
+            : t
+        ));
+      }
+    }, TICK_MS);
+  }, []);
 
   // Typing effect for code
   const typeCode = useCallback((filename: string, fullContent: string) => {
@@ -143,28 +200,21 @@ export default function WatchPage() {
     }
     if (data.thinking) {
       const hash = hashContent(data.thinking);
+      // Check if we've seen this thought before
       setSeenHashes(prev => {
         if (prev.has(hash)) return prev; // Skip duplicate
+        // Not a duplicate - type it out
+        const id = Date.now().toString();
+        typeThought(id, data.thinking);
         const newSet = new Set(prev);
         newSet.add(hash);
         return newSet;
-      });
-      setThinking(prev => {
-        // Check if this exact content already exists
-        if (prev.some(t => hashContent(t.content) === hash)) {
-          return prev; // Don't add duplicate
-        }
-        return [...prev, {
-          id: Date.now().toString(),
-          content: data.thinking,
-          timestamp: new Date().toISOString(),
-        }].slice(-30);
       });
     }
     if (data.status) setSession(prev => prev ? { ...prev, status: data.status === 'working' ? 'live' : data.status } : prev);
     if (data.task) setSession(prev => prev ? { ...prev, current_task: data.task.title } : prev);
     if (data.preview?.url) setSession(prev => prev ? { ...prev, preview_url: data.preview.url } : prev);
-  }, [typeCode]);
+  }, [typeCode, typeThought]);
 
   // WebSocket connection (local dev or production)
   useEffect(() => {
@@ -239,6 +289,8 @@ export default function WatchPage() {
             dedupedThinking.push({
               id: e.id,
               content: e.data?.content || '',
+              displayedContent: e.data?.content || '', // Full content for history
+              isTyping: false,
               timestamp: e.created_at,
             });
           }
@@ -384,8 +436,8 @@ export default function WatchPage() {
                   style={{ opacity }}
                 >
                   <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">
-                    {block.content}
-                    {isLatest && <span className="inline-block w-1.5 h-4 bg-cyan-400/70 ml-1 animate-pulse" />}
+                    {block.displayedContent || block.content}
+                    {(isLatest || block.isTyping) && <span className="inline-block w-1.5 h-4 bg-cyan-400/70 ml-1 animate-pulse" />}
                   </p>
                   <div className="mt-2 text-[10px] text-white/20">
                     {new Date(block.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
