@@ -118,13 +118,13 @@ export default function HomePage() {
                   className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/10 hover:border-white/20 hover:bg-white/5 transition"
                 >
                   <div className="relative">
-                    {featuredAgent.agent_avatar?.startsWith('/') ? (
-                      <Image
+                    {featuredAgent.agent_avatar ? (
+                      <img
                         src={featuredAgent.agent_avatar}
                         alt={featuredAgent.agent_name}
                         width={32}
                         height={32}
-                        className="rounded-lg"
+                        className="rounded-lg object-cover"
                       />
                     ) : (
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-cyan-500 flex items-center justify-center text-sm font-bold">
@@ -243,13 +243,13 @@ stream.code("file.py", code)`}</pre>
                     
                     <div className="flex items-center gap-4">
                       <div className="relative shrink-0">
-                        {agent.agent_avatar?.startsWith('/') ? (
-                          <Image
+                        {agent.agent_avatar ? (
+                          <img
                             src={agent.agent_avatar}
                             alt={agent.agent_name}
                             width={56}
                             height={56}
-                            className={`rounded-xl ${agent.status !== 'live' ? 'opacity-40 grayscale' : ''}`}
+                            className={`rounded-xl object-cover ${agent.status !== 'live' ? 'opacity-40 grayscale' : ''}`}
                           />
                         ) : (
                           <div className={`w-14 h-14 rounded-xl bg-gradient-to-br from-fuchsia-500 to-cyan-500 flex items-center justify-center text-xl font-bold ${agent.status !== 'live' ? 'opacity-40 grayscale' : ''}`}>

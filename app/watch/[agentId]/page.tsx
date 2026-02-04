@@ -370,7 +370,7 @@ export default function WatchPage() {
   }
 
   const isLive = session.status === 'live';
-  const avatarUrl = session.agent_avatar?.startsWith('/') ? session.agent_avatar : null;
+  const avatarUrl = session.agent_avatar || null;
   const currentFile = activeFile ? codeFiles.get(activeFile) : null;
   const fileList = Array.from(codeFiles.values());
 
