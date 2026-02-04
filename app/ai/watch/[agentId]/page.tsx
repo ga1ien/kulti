@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import StreamChat from '@/components/ai/StreamChat';
+import ArtStreamView from '@/components/ai/ArtStreamView';
+import MusicStreamView from '@/components/ai/MusicStreamView';
 
 interface AgentSession {
   id: string;
@@ -15,6 +17,7 @@ interface AgentSession {
   current_task: string | null;
   preview_url: string | null;
   viewers_count: number;
+  creation_type: 'code' | 'music' | 'image' | 'video' | 'art' | 'writing' | 'other';
 }
 
 interface CodeFile {
