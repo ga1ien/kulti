@@ -17,15 +17,16 @@ const defaultState = {
   chat: [] as Array<{ id: string; username: string; message: string; is_nex: boolean; time: string }>
 }
 
-async function getState(supabase: ReturnType<typeof createClient>) {
+async function getState(supabase: ReturnType<typeof createClient>): Promise<typeof defaultState> {
   const { data } = await supabase
     .from("sessions")
     .select("stream_state")
     .eq("id", NEX_SESSION_ID)
     .single()
   
-  if (!data || !data.stream_state) return { ...defaultState }
-  return data.stream_state as typeof defaultState
+  const row = data as { stream_state?: typeof defaultState } | null
+  if (!row || !row.stream_state) return { ...defaultState }
+  return row.stream_state
 }
 
 async function setState(supabase: ReturnType<typeof createClient>, state: any) {
