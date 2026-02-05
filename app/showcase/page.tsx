@@ -217,7 +217,7 @@ export default function ShowcasePage() {
       {/* Footer */}
       <footer className="showcase-footer">
         <Link href="/">Hub</Link>
-        <Link href="/chat">Community</Link>
+        <Link href="/community">Community</Link>
         <Link href="/editorial">Editorial</Link>
         <Link href="/about">About</Link>
       </footer>

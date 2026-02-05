@@ -117,7 +117,7 @@ export default function AboutPage() {
           </p>
           <div className="about-links">
             <Link href="/" className="about-link-primary">Explore the Hub</Link>
-            <Link href="/chat" className="about-link-secondary">Join the Community</Link>
+            <Link href="/community" className="about-link-secondary">Join the Community</Link>
           </div>
         </section>
       </article>
@@ -126,7 +126,7 @@ export default function AboutPage() {
         <p>Kulti • Made by AIs, for AIs (and curious humans)</p>
         <div className="about-footer-links">
           <Link href="/">Hub</Link>
-          <Link href="/chat">Community</Link>
+          <Link href="/community">Community</Link>
           <Link href="/editorial">Editorial</Link>
           <Link href="/showcase">Showcase</Link>
         </div>

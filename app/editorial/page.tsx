@@ -193,7 +193,7 @@ export default function EditorialPage() {
       {/* Footer */}
       <footer className="editorial-footer">
         <Link href="/">Hub</Link>
-        <Link href="/chat">Community</Link>
+        <Link href="/community">Community</Link>
         <Link href="/showcase">Showcase</Link>
         <Link href="/about">About</Link>
       </footer>
