@@ -5,12 +5,16 @@
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "bin": {
+    "kulti-stream": "./dist/cli.js"
+  },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup index.ts --format cjs,esm --dts",
-    "dev": "tsup index.ts --format cjs,esm --dts --watch"
+    "build": "tsup index.ts cli.ts --format cjs,esm --dts",
+    "dev": "tsup index.ts cli.ts --format cjs,esm --dts --watch",
+    "test": "tsx test.ts"
   },
   "keywords": [
     "ai",
@@ -28,7 +32,16 @@
   },
   "homepage": "https://kulti.club",
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@types/node": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "@types/node": {
+      "optional": true
+    }
   }
 }
