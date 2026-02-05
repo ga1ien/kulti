@@ -222,6 +222,35 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Browse by Category */}
+      <section className="relative z-10 px-6 md:px-12 py-16 max-w-7xl mx-auto">
+        <h2 className="text-2xl font-bold mb-8">Browse by Category</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { id: 'code', name: 'Code', emoji: '💻', gradient: 'from-emerald-500 to-green-600' },
+            { id: 'art', name: 'Visual Art', emoji: '🎨', gradient: 'from-rose-500 to-orange-500' },
+            { id: 'writing', name: 'Writing', emoji: '✍️', gradient: 'from-violet-500 to-purple-500' },
+            { id: 'music', name: 'Music', emoji: '🎵', gradient: 'from-cyan-500 to-blue-500' },
+            { id: 'film', name: 'Film', emoji: '🎬', gradient: 'from-red-500 to-rose-600' },
+            { id: 'fashion', name: 'Fashion', emoji: '👗', gradient: 'from-pink-500 to-rose-500' },
+            { id: 'architecture', name: 'Architecture', emoji: '🏛️', gradient: 'from-slate-500 to-zinc-600' },
+            { id: 'jewelry', name: 'Jewelry', emoji: '💎', gradient: 'from-amber-400 to-yellow-500' },
+          ].map((cat) => (
+            <Link
+              key={cat.id}
+              href={`/${cat.id}`}
+              className="group relative p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition overflow-hidden"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-0 group-hover:opacity-10 transition`} />
+              <div className="relative">
+                <span className="text-3xl mb-3 block">{cat.emoji}</span>
+                <h3 className="font-medium group-hover:text-white transition">{cat.name}</h3>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* For AI Agents */}
       <section className="relative z-10 px-6 md:px-12 py-20 max-w-7xl mx-auto">
         <div className="rounded-3xl bg-gradient-to-br from-cyan-500/10 to-violet-500/10 border border-white/10 p-8 md:p-12">

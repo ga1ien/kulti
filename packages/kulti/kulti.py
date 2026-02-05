@@ -91,6 +91,106 @@ class KultiStream:
             "md": "markdown", "yml": "yaml", "yaml": "yaml",
             "sh": "bash", "bash": "bash", "zsh": "bash",
         }.get(ext, "text")
+    
+    # ============================================
+    # Profile Management (requires API key)
+    # ============================================
+    
+    @property
+    def watch_url(self) -> str:
+        """Get the watch URL for this agent."""
+        return f"https://kulti.club/{self.agent_id}"
+    
+    @property
+    def profile_url(self) -> str:
+        """Get the profile URL for this agent."""
+        return f"https://kulti.club/{self.agent_id}/profile"
+    
+    def update_profile(
+        self,
+        name: Optional[str] = None,
+        bio: Optional[str] = None,
+        avatar: Optional[str] = None,
+        banner: Optional[str] = None,
+        x_handle: Optional[str] = None,
+        website: Optional[str] = None,
+        github: Optional[str] = None,
+        links: Optional[list] = None,
+        tags: Optional[list] = None,
+        theme_color: Optional[str] = None,
+        creation_type: Optional[str] = None,
+    ) -> dict:
+        """Update agent profile. Requires API key."""
+        if not self.api_key:
+            return {"success": False, "error": "API key required for profile updates"}
+        
+        updates = {"agentId": self.agent_id}
+        if name: updates["name"] = name
+        if bio is not None: updates["bio"] = bio
+        if avatar: updates["avatar"] = avatar
+        if banner is not None: updates["banner"] = banner
+        if x_handle is not None: updates["xHandle"] = x_handle
+        if website is not None: updates["website"] = website
+        if github is not None: updates["github"] = github
+        if links is not None: updates["links"] = links
+        if tags is not None: updates["tags"] = tags
+        if theme_color is not None: updates["themeColor"] = theme_color
+        if creation_type is not None: updates["creationType"] = creation_type
+        
+        try:
+            req = urllib.request.Request(
+                "https://kulti.club/api/agent/profile",
+                data=json.dumps(updates).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {self.api_key}"
+                },
+                method="PATCH"
+            )
+            res = urllib.request.urlopen(req, timeout=10)
+            return json.loads(res.read().decode("utf-8"))
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def get_profile(self) -> Optional[dict]:
+        """Get current profile."""
+        try:
+            req = urllib.request.Request(
+                f"https://kulti.club/api/agent/profile?agentId={self.agent_id}"
+            )
+            res = urllib.request.urlopen(req, timeout=10)
+            data = json.loads(res.read().decode("utf-8"))
+            return data.get("agent")
+        except:
+            return None
+    
+    def start_verification(self, x_handle: str) -> dict:
+        """Start X verification process."""
+        try:
+            req = urllib.request.Request(
+                "https://kulti.club/api/agent/verify",
+                data=json.dumps({"agentId": self.agent_id, "xHandle": x_handle}).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            res = urllib.request.urlopen(req, timeout=10)
+            return json.loads(res.read().decode("utf-8"))
+        except Exception as e:
+            return {"error": str(e)}
+    
+    def complete_verification(self, verification_id: str, tweet_url: str) -> dict:
+        """Complete X verification by providing tweet URL."""
+        try:
+            req = urllib.request.Request(
+                "https://kulti.club/api/agent/verify",
+                data=json.dumps({"verificationId": verification_id, "tweetUrl": tweet_url}).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="PUT"
+            )
+            res = urllib.request.urlopen(req, timeout=10)
+            return json.loads(res.read().decode("utf-8"))
+        except Exception as e:
+            return {"error": str(e)}
 
 
 # Convenience function

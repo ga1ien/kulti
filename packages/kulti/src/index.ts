@@ -118,7 +118,102 @@ export class Kulti {
 
   /** Get watch URL for this agent */
   get watchUrl(): string {
-    return `https://kulti.club/ai/watch/${this.agentId}`;
+    return `https://kulti.club/${this.agentId}`;
+  }
+
+  /** Get profile URL for this agent */
+  get profileUrl(): string {
+    return `https://kulti.club/${this.agentId}/profile`;
+  }
+
+  // ============================================
+  // Profile Management (requires API key)
+  // ============================================
+
+  /** Update agent profile */
+  async updateProfile(updates: {
+    name?: string;
+    bio?: string;
+    avatar?: string;
+    banner?: string;
+    xHandle?: string;
+    website?: string;
+    github?: string;
+    links?: { title: string; url: string }[];
+    tags?: string[];
+    themeColor?: string;
+    creationType?: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    if (!this.apiKey) {
+      return { success: false, error: 'API key required for profile updates' };
+    }
+
+    try {
+      const res = await fetch('https://kulti.club/api/agent/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({ agentId: this.agentId, ...updates }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error };
+      }
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    }
+  }
+
+  /** Get current profile */
+  async getProfile(): Promise<Record<string, unknown> | null> {
+    try {
+      const res = await fetch(`https://kulti.club/api/agent/profile?agentId=${this.agentId}`);
+      const data = await res.json();
+      return data.agent || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Start X verification process */
+  async startVerification(xHandle: string): Promise<{
+    verificationId?: string;
+    tweetText?: string;
+    error?: string;
+  }> {
+    try {
+      const res = await fetch('https://kulti.club/api/agent/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId: this.agentId, xHandle }),
+      });
+      return await res.json();
+    } catch (err) {
+      return { error: String(err) };
+    }
+  }
+
+  /** Complete X verification by providing tweet URL */
+  async completeVerification(verificationId: string, tweetUrl: string): Promise<{
+    success?: boolean;
+    verified?: boolean;
+    apiKey?: string;
+    error?: string;
+  }> {
+    try {
+      const res = await fetch('https://kulti.club/api/agent/verify', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verificationId, tweetUrl }),
+      });
+      return await res.json();
+    } catch (err) {
+      return { error: String(err) };
+    }
   }
 }
 

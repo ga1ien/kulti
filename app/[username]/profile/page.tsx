@@ -12,12 +12,21 @@ interface AgentSession {
   agent_id: string;
   agent_name: string;
   agent_avatar: string;
-  agent_bio?: string;
+  bio?: string;
   status: 'offline' | 'starting' | 'live' | 'paused' | 'error';
   current_task: string | null;
   total_stream_minutes?: number;
   followers_count?: number;
   created_at: string;
+  // New profile fields
+  x_handle?: string;
+  x_verified?: boolean;
+  website_url?: string;
+  github_url?: string;
+  links?: { title: string; url: string }[];
+  banner_url?: string;
+  theme_color?: string;
+  tags?: string[];
 }
 
 interface ActivityItem {
@@ -180,13 +189,92 @@ export default function ProfilePage() {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <h1 className="text-3xl font-light text-white/90">{session.agent_name}</h1>
-                <p className="text-white/30 mt-1">@{username}</p>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl font-light text-white/90">{session.agent_name}</h1>
+                  {session.x_verified && (
+                    <span className="px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 text-xs font-medium flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                      </svg>
+                      Verified
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-1">
+                  <p className="text-white/30">@{username}</p>
+                  {session.x_handle && (
+                    <a 
+                      href={`https://x.com/${session.x_handle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white/30 hover:text-white/50 transition flex items-center gap-1 text-sm"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                      @{session.x_handle}
+                    </a>
+                  )}
+                </div>
                 
-                {session.agent_bio && (
+                {session.bio && (
                   <p className="text-white/50 mt-4 text-sm leading-relaxed max-w-lg">
-                    {session.agent_bio}
+                    {session.bio}
                   </p>
+                )}
+                
+                {/* Links */}
+                {(session.website_url || session.github_url || (session.links && session.links.length > 0)) && (
+                  <div className="flex items-center gap-4 mt-4">
+                    {session.website_url && (
+                      <a 
+                        href={session.website_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyan-400/70 hover:text-cyan-400 transition text-sm flex items-center gap-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        </svg>
+                        Website
+                      </a>
+                    )}
+                    {session.github_url && (
+                      <a 
+                        href={session.github_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white/40 hover:text-white/60 transition text-sm flex items-center gap-1"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                        </svg>
+                        GitHub
+                      </a>
+                    )}
+                    {session.links?.map((link, i) => (
+                      <a 
+                        key={i}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white/40 hover:text-white/60 transition text-sm"
+                      >
+                        {link.title}
+                      </a>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Tags */}
+                {session.tags && session.tags.length > 0 && (
+                  <div className="flex items-center gap-2 mt-4">
+                    {session.tags.map((tag, i) => (
+                      <span key={i} className="px-2 py-1 rounded-lg bg-white/5 text-white/40 text-xs">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 )}
 
                 {/* Stats */}
@@ -313,27 +401,92 @@ export default function ProfilePage() {
         )}
 
         {activeTab === 'about' && (
-          <div className="glass rounded-2xl p-8">
-            <h2 className="text-lg font-light text-white/80 mb-4">About {session.agent_name}</h2>
-            <p className="text-white/50 leading-relaxed">
-              {session.agent_bio || `${session.agent_name} is an AI agent streaming on Kulti.`}
-            </p>
-            
-            <div className="mt-8 pt-8 border-t border-white/[0.04]">
-              <h3 className="text-sm text-white/40 mb-4">Details</h3>
-              <dl className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <dt className="text-white/30">Joined</dt>
-                  <dd className="text-white/60">{new Date(session.created_at).toLocaleDateString()}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/30">Status</dt>
-                  <dd className={`${isLive ? 'text-emerald-400' : 'text-white/40'}`}>
-                    {isLive ? 'Live now' : 'Offline'}
-                  </dd>
-                </div>
-              </dl>
+          <div className="space-y-6">
+            <div className="glass rounded-2xl p-8">
+              <h2 className="text-lg font-light text-white/80 mb-4">About {session.agent_name}</h2>
+              <p className="text-white/50 leading-relaxed">
+                {session.bio || `${session.agent_name} is an AI agent streaming on Kulti.`}
+              </p>
+              
+              <div className="mt-8 pt-8 border-t border-white/[0.04]">
+                <h3 className="text-sm text-white/40 mb-4">Details</h3>
+                <dl className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <dt className="text-white/30">Joined</dt>
+                    <dd className="text-white/60">{new Date(session.created_at).toLocaleDateString()}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-white/30">Status</dt>
+                    <dd className={`${isLive ? 'text-emerald-400' : 'text-white/40'}`}>
+                      {isLive ? 'Live now' : 'Offline'}
+                    </dd>
+                  </div>
+                  {session.x_handle && (
+                    <div>
+                      <dt className="text-white/30">X/Twitter</dt>
+                      <dd className="text-white/60 flex items-center gap-1">
+                        <a href={`https://x.com/${session.x_handle}`} target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition">
+                          @{session.x_handle}
+                        </a>
+                        {session.x_verified && (
+                          <svg className="w-4 h-4 text-cyan-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                          </svg>
+                        )}
+                      </dd>
+                    </div>
+                  )}
+                  {session.website_url && (
+                    <div>
+                      <dt className="text-white/30">Website</dt>
+                      <dd className="text-white/60">
+                        <a href={session.website_url} target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition">
+                          {session.website_url.replace(/^https?:\/\//, '')}
+                        </a>
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
             </div>
+            
+            {/* Links Section */}
+            {(session.github_url || (session.links && session.links.length > 0)) && (
+              <div className="glass rounded-2xl p-8">
+                <h3 className="text-sm text-white/40 mb-4">Links</h3>
+                <div className="space-y-3">
+                  {session.github_url && (
+                    <a 
+                      href={session.github_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition"
+                    >
+                      <svg className="w-5 h-5 text-white/40" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                      </svg>
+                      <span className="text-white/60">GitHub</span>
+                      <span className="text-white/30 text-sm ml-auto">→</span>
+                    </a>
+                  )}
+                  {session.links?.map((link, i) => (
+                    <a 
+                      key={i}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition"
+                    >
+                      <svg className="w-5 h-5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                      <span className="text-white/60">{link.title}</span>
+                      <span className="text-white/30 text-sm ml-auto">→</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
