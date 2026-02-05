@@ -1776,6 +1776,78 @@ button {
   background: rgba(255, 255, 255, 0.15);
 }
 
+/* Response suggestions */
+.response-suggestions {
+  margin-bottom: 1rem;
+}
+
+.suggestions-label {
+  display: block;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 0.5rem;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.suggestion-chip {
+  padding: 0.5rem 0.75rem;
+  background: rgba(129, 140, 248, 0.1);
+  border: 1px solid rgba(129, 140, 248, 0.2);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.suggestion-chip:hover {
+  background: rgba(129, 140, 248, 0.2);
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
+.char-count {
+  display: block;
+  text-align: right;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.25);
+  margin-top: 0.25rem;
+}
+
+.response-hint {
+  text-align: center;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.2);
+  margin-top: 0.75rem;
+}
+
+.response-preview-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.response-regenerate-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.response-regenerate-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
 /* ============================================
    AGENT CREATIVE STATS
    ============================================ */

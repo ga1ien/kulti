@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
   CreativeType,
@@ -43,6 +43,67 @@ export function ResponseCreationModal({
   
   const supabase = createClient();
   const config = relationshipConfig[relationship];
+
+  // Escape key to close
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && step === 'compose') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [step, onClose]);
+
+  // Generate prompt suggestions based on the original work
+  const getSuggestions = useCallback(() => {
+    const originalPrompt = original.prompt || '';
+    const suggestions: string[] = [];
+    
+    switch (relationship) {
+      case 'response':
+        suggestions.push(
+          `A visual response to "${originalPrompt.slice(0, 30)}..." - showing a different perspective`,
+          `What comes after: the next moment in this scene`,
+          `The emotional opposite of this piece`
+        );
+        break;
+      case 'remix':
+        suggestions.push(
+          `${originalPrompt} but in a completely different style`,
+          `The same concept, reimagined in [your style]`,
+          `A glitched, corrupted version of this image`
+        );
+        break;
+      case 'inspired_by':
+        suggestions.push(
+          `Something this piece made me feel: [your interpretation]`,
+          `A parallel universe version of this scene`,
+          `What I see when I look at this`
+        );
+        break;
+      case 'continuation':
+        suggestions.push(
+          `The next chapter: what happens after this moment`,
+          `Zooming out to reveal the larger scene`,
+          `The same scene, years later`
+        );
+        break;
+      case 'critique':
+        suggestions.push(
+          `A counter-argument in visual form`,
+          `What this piece is missing`,
+          `The shadow side of this image`
+        );
+        break;
+      default:
+        suggestions.push(
+          `My response to this piece`,
+          `A conversation with this work`
+        );
+    }
+    return suggestions;
+  }, [original.prompt, relationship]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -150,6 +211,22 @@ export function ResponseCreationModal({
         {/* Content based on step */}
         {step === 'compose' && (
           <div className="response-compose">
+            {/* Suggestions */}
+            <div className="response-suggestions">
+              <span className="suggestions-label">Try something like:</span>
+              <div className="suggestions-list">
+                {getSuggestions().map((suggestion, i) => (
+                  <button
+                    key={i}
+                    className="suggestion-chip"
+                    onClick={() => setPrompt(suggestion)}
+                  >
+                    {suggestion.slice(0, 50)}{suggestion.length > 50 ? '...' : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="response-field">
               <label>Your creative prompt</label>
               <textarea
@@ -157,7 +234,9 @@ export function ResponseCreationModal({
                 onChange={e => setPrompt(e.target.value)}
                 placeholder={`What's your ${relationship} to this piece? Describe what you want to create...`}
                 rows={4}
+                autoFocus
               />
+              <span className="char-count">{prompt.length} characters</span>
             </div>
 
             <div className="response-field">
@@ -180,6 +259,8 @@ export function ResponseCreationModal({
               <span>✨</span>
               Create {config.label}
             </button>
+            
+            <p className="response-hint">Press Escape to cancel</p>
           </div>
         )}
 
@@ -195,6 +276,17 @@ export function ResponseCreationModal({
           <div className="response-preview">
             <img src={generatedImage} alt="Generated response" className="response-preview-image" />
             <div className="response-preview-prompt">{prompt}</div>
+            <div className="response-preview-actions">
+              <button 
+                className="response-regenerate-btn"
+                onClick={() => {
+                  setGeneratedImage(null);
+                  setStep('compose');
+                }}
+              >
+                🔄 Try again
+              </button>
+            </div>
           </div>
         )}
 

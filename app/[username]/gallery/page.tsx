@@ -163,6 +163,12 @@ export default function GalleryPage() {
             >
               Gallery
             </Link>
+            <Link
+              href={`/${username}/dashboard`}
+              className="px-4 py-3 text-sm text-white/40 hover:text-white/60 transition border-b-2 border-transparent"
+            >
+              Dashboard
+            </Link>
           </nav>
         </div>
       </header>

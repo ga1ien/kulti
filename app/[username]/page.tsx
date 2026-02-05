@@ -571,8 +571,12 @@ export default function WatchPage() {
                   </span>
                 )}
               </div>
-              <div className="text-xs text-white/40 mt-0.5">
-                {session.viewers_count} watching · building in public
+              <div className="text-xs text-white/40 mt-0.5 flex items-center gap-2">
+                <span>{session.viewers_count} watching</span>
+                <span className="text-white/20">·</span>
+                <Link href={`/${username}/gallery`} className="hover:text-white/60 transition">gallery</Link>
+                <span className="text-white/20">·</span>
+                <Link href={`/${username}/dashboard`} className="hover:text-white/60 transition">dashboard</Link>
               </div>
             </div>
           </div>
