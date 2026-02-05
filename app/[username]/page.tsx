@@ -314,15 +314,21 @@ export default function WatchPage() {
         return newSet;
       });
     }
-    // Handle legacy thinking (simple string)
+    // Handle legacy thinking (supports both string and structured format)
     if (data.thinking && !data.thought) {
-      const hash = hashContent(data.thinking);
+      // Extract content if structured, otherwise use as-is
+      const rawThinking = data.thinking;
+      const thinkingContent = (rawThinking && typeof rawThinking === 'object' && 'content' in rawThinking)
+        ? String(rawThinking.content)
+        : String(rawThinking);
+      
+      const hash = hashContent(thinkingContent);
       // Check if we've seen this thought before
       setSeenHashes(prev => {
         if (prev.has(hash)) return prev; // Skip duplicate
         // Not a duplicate - type it out
         const id = Date.now().toString();
-        typeThought(id, data.thinking);
+        typeThought(id, thinkingContent);
         const newSet = new Set(prev);
         newSet.add(hash);
         return newSet;
@@ -400,18 +406,31 @@ export default function WatchPage() {
         const seen = new Set<string>();
         const dedupedThinking: ThinkingBlock[] = [];
         for (const e of thinkingEvents.reverse()) {
-          const content = e.data?.content || '';
+          // Handle both old string format and new structured format
+          const rawContent = e.data?.content || '';
+          // Check if it's a structured thought (has .content property)
+          const content = (rawContent && typeof rawContent === 'object' && 'content' in rawContent) 
+            ? String(rawContent.content)
+            : String(rawContent);
           const hash = hashContent(content);
           if (!seen.has(hash)) {
             seen.add(hash);
+            // Extract type and metadata from structured thought if present
+            const thoughtType = typeof rawContent === 'object' && rawContent.type
+              ? rawContent.type
+              : (e.data?.thoughtType || (e.type === 'thought' ? e.data?.type : 'general'));
+            const thoughtMetadata = typeof rawContent === 'object' && rawContent.metadata
+              ? rawContent.metadata
+              : e.data?.metadata;
+            
             dedupedThinking.push({
               id: e.id,
               content,
               displayedContent: content, // Full content for history
               isTyping: false,
               timestamp: e.created_at,
-              type: e.data?.thoughtType || (e.type === 'thought' ? e.data?.type : 'general'),
-              metadata: e.data?.metadata,
+              type: thoughtType,
+              metadata: thoughtMetadata,
             });
           }
         }
@@ -433,7 +452,12 @@ export default function WatchPage() {
           typeCode(e.data?.filename || 'untitled', e.data?.content || '');
         }
         if (e.type === 'thinking' || e.type === 'thought') {
-          const content = e.data?.content || '';
+          // Handle both old string format and new structured format
+          const rawContent = e.data?.content || '';
+          // Check if it's a structured thought (has .content property)
+          const content = (rawContent && typeof rawContent === 'object' && 'content' in rawContent) 
+            ? String(rawContent.content)
+            : String(rawContent);
           const hash = hashContent(content);
           setSeenHashes(prev => {
             if (prev.has(hash)) return prev;
@@ -443,15 +467,23 @@ export default function WatchPage() {
           });
           // Use typeThought for typing effect on realtime updates
           if (!seenHashes.has(hash)) {
-            // Add structured thought if available
+            // Extract type and metadata from structured thought if present
+            const thoughtType = typeof rawContent === 'object' && rawContent.type
+              ? rawContent.type
+              : (e.data?.thoughtType || e.data?.type || 'general');
+            const thoughtMetadata = typeof rawContent === 'object' && rawContent.metadata
+              ? rawContent.metadata
+              : e.data?.metadata;
+            
+            // Add structured thought
             setThinking(prev => [...prev, {
               id: e.id,
               content,
               displayedContent: '',
               isTyping: true,
               timestamp: new Date().toISOString(),
-              type: e.data?.thoughtType || e.data?.type || 'general',
-              metadata: e.data?.metadata,
+              type: thoughtType,
+              metadata: thoughtMetadata,
             }].slice(-30));
             typeThought(e.id, content);
           }
