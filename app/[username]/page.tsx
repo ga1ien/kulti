@@ -798,7 +798,7 @@ export default function WatchPage() {
           <StreamChat 
             sessionId={session.id} 
             agentName={session.agent_name}
-            username={username}
+            agentId={username}
           />
         </div>
       )}
