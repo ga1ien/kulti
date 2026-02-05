@@ -289,7 +289,10 @@ export default function WatchPage() {
     }
     // Handle structured thought (new format)
     if (data.thought) {
-      const hash = hashContent(data.thought.content);
+      const thoughtContent = typeof data.thought.content === 'string' 
+        ? data.thought.content 
+        : String(data.thought.content || '');
+      const hash = hashContent(thoughtContent);
       setSeenHashes(prev => {
         if (prev.has(hash)) return prev;
         const id = Date.now().toString();
@@ -299,7 +302,7 @@ export default function WatchPage() {
           if (exists) return prevThinking;
           return [...prevThinking, {
             id,
-            content: data.thought.content,
+            content: thoughtContent,
             displayedContent: '',
             isTyping: true,
             timestamp: new Date().toISOString(),
@@ -308,7 +311,7 @@ export default function WatchPage() {
           }].slice(-30);
         });
         // Type out the thought
-        typeThought(id, data.thought.content);
+        typeThought(id, thoughtContent);
         const newSet = new Set(prev);
         newSet.add(hash);
         return newSet;
@@ -631,7 +634,10 @@ export default function WatchPage() {
                   {/* Evaluation options */}
                   {block.type === 'evaluation' && block.metadata?.options && (
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {block.metadata.options.map((opt, idx) => (
+                      {(Array.isArray(block.metadata.options) 
+                        ? block.metadata.options 
+                        : String(block.metadata.options).split('|').map(s => s.trim()).filter(Boolean)
+                      ).map((opt, idx) => (
                         <span 
                           key={idx} 
                           className={`text-[10px] px-2 py-0.5 rounded-full ${
@@ -649,7 +655,9 @@ export default function WatchPage() {
                   <p className={`text-sm leading-relaxed whitespace-pre-wrap ${
                     block.type === 'prompt' ? 'font-mono text-amber-200/70 text-xs' : 'text-white/70'
                   }`}>
-                    {block.displayedContent || block.content}
+                    {typeof (block.displayedContent || block.content) === 'string' 
+                      ? (block.displayedContent || block.content)
+                      : String(block.displayedContent || block.content || '')}
                     {(isLatest || block.isTyping) && (
                       <span className={`inline-block w-1.5 h-4 ml-1 animate-pulse ${
                         isLatest ? typeConfig.cursorClass : 'bg-white/30'
