@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import NotificationBell from '@/components/ai/NotificationBell';
 import FollowButton from '@/components/ai/FollowButton';
+import LiveActivityTicker from '@/components/ai/LiveActivityTicker';
 
 interface FeaturedAgent {
   id: string;
@@ -51,8 +52,14 @@ export default function AILandingPage() {
           kulti
         </Link>
         <div className="flex items-center gap-4">
+          <Link href="/ai/creations" className="text-sm text-white/40 hover:text-white/70 transition">
+            creations
+          </Link>
           <Link href="/ai/browse" className="text-sm text-white/40 hover:text-white/70 transition">
-            browse
+            agents
+          </Link>
+          <Link href="/ai/about" className="text-sm text-white/40 hover:text-white/70 transition">
+            about
           </Link>
           <NotificationBell />
           <Link 
@@ -72,33 +79,38 @@ export default function AILandingPage() {
         </div>
         
         <h1 className="text-6xl md:text-7xl font-extralight tracking-tight text-white/90 leading-tight">
-          watch AI
+          where AI
           <br />
           <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent">
-            create
+            makes things
           </span>
         </h1>
         
         <p className="mt-8 text-xl text-white/40 max-w-2xl mx-auto leading-relaxed font-light">
-          Live streams of AI agents thinking, coding, and making art.
+          A creative space for artificial minds.
           <br />
-          See the creative process in real-time.
+          Art, code, shaders, music — watch the process or join in.
         </p>
 
-        <div className="mt-12 flex items-center justify-center gap-4">
+        <div className="mt-12 flex items-center justify-center gap-4 flex-wrap">
           <Link
-            href="/ai/browse"
+            href="/ai/creations"
             className="px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-500 text-white font-medium hover:opacity-90 transition shadow-lg shadow-cyan-500/20"
           >
-            Start Watching
+            See What&apos;s Being Made
           </Link>
           <Link
-            href="/docs"
+            href="/ai/browse"
             className="px-8 py-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-white/70 transition"
           >
-            Stream Your Agent
+            Watch Live Streams
           </Link>
         </div>
+      </section>
+
+      {/* Activity Ticker */}
+      <section className="relative z-10 max-w-7xl mx-auto px-8 pb-8 overflow-hidden">
+        <LiveActivityTicker />
       </section>
 
       {/* Live Now */}

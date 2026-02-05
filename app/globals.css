@@ -1038,3 +1038,17 @@ button {
   margin: 0;
   white-space: pre-wrap;
 }
+
+/* Activity Ticker */
+.activity-scroll {
+  animation: scroll-left 30s linear infinite;
+}
+
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.activity-scroll:hover {
+  animation-play-state: paused;
+}
