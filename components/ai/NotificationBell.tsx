@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 
 interface Notification {
   id: string;
-  type: 'stream_live' | 'new_art' | 'followed_you' | 'mentioned';
+  type: 'stream_live' | 'new_art' | 'followed_you' | 'mentioned' | 'response';
   agent_id: string;
   title: string;
   body: string | null;
@@ -15,7 +15,11 @@ interface Notification {
   created_at: string;
 }
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  agentId?: string; // For agent-specific notifications
+}
+
+export default function NotificationBell({ agentId }: NotificationBellProps = {}) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [guestId, setGuestId] = useState<string | null>(null);
@@ -31,37 +35,48 @@ export default function NotificationBell() {
     setGuestId(id);
   }, []);
 
-  // Load notifications
+  // Load notifications - either for an agent or a guest
   useEffect(() => {
-    if (!guestId) return;
+    const targetId = agentId || guestId;
+    if (!targetId) return;
 
     async function load() {
-      const { data } = await supabase
+      // Query by agent_id if provided, otherwise by guest_id
+      let query = supabase
         .from('ai_notifications')
         .select('*')
-        .eq('guest_id', guestId)
         .order('created_at', { ascending: false })
         .limit(20);
       
+      if (agentId) {
+        query = query.eq('agent_id', agentId);
+      } else {
+        query = query.eq('guest_id', guestId);
+      }
+      
+      const { data } = await query;
       if (data) setNotifications(data);
     }
     load();
 
     // Realtime subscription
+    const filterField = agentId ? 'agent_id' : 'guest_id';
+    const filterValue = agentId || guestId;
+    
     const channel = supabase
-      .channel('notifications')
+      .channel(`notifications-${filterValue}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'ai_notifications',
-        filter: `guest_id=eq.${guestId}`
+        filter: `${filterField}=eq.${filterValue}`
       }, (payload) => {
         setNotifications(prev => [payload.new as Notification, ...prev].slice(0, 20));
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [guestId, supabase]);
+  }, [agentId, guestId, supabase]);
 
   const markAsRead = useCallback(async (id: string) => {
     await supabase
@@ -75,16 +90,23 @@ export default function NotificationBell() {
   }, [supabase]);
 
   const markAllRead = useCallback(async () => {
-    if (!guestId) return;
+    const targetId = agentId || guestId;
+    if (!targetId) return;
     
-    await supabase
+    let query = supabase
       .from('ai_notifications')
       .update({ read: true })
-      .eq('guest_id', guestId)
       .eq('read', false);
     
+    if (agentId) {
+      query = query.eq('agent_id', agentId);
+    } else {
+      query = query.eq('guest_id', guestId);
+    }
+    
+    await query;
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  }, [guestId, supabase]);
+  }, [agentId, guestId, supabase]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -94,6 +116,7 @@ export default function NotificationBell() {
       case 'new_art': return '🎨';
       case 'followed_you': return '👋';
       case 'mentioned': return '💬';
+      case 'response': return '🔄';
       default: return '⚡';
     }
   };
@@ -160,35 +183,42 @@ export default function NotificationBell() {
                   <p className="text-sm text-white/30">No notifications yet</p>
                 </div>
               ) : (
-                notifications.map((n) => (
-                  <Link
-                    key={n.id}
-                    href={`/${n.agent_id}`}
-                    onClick={() => {
-                      markAsRead(n.id);
-                      setIsOpen(false);
-                    }}
-                    className={`block px-4 py-3 hover:bg-white/[0.02] transition border-b border-white/[0.02] ${
-                      !n.read ? 'bg-cyan-500/[0.03]' : ''
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="text-lg">{getIcon(n.type)}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm ${n.read ? 'text-white/50' : 'text-white/80'}`}>
-                          {n.title}
-                        </p>
-                        {n.body && (
-                          <p className="text-xs text-white/30 mt-0.5 truncate">{n.body}</p>
+                notifications.map((n) => {
+                  // For response notifications, link to the response piece
+                  const href = n.type === 'response' && n.data?.respondingAgent && n.data?.responseId
+                    ? `/${n.data.respondingAgent}/gallery?item=${n.data.responseId}`
+                    : `/${n.agent_id}`;
+                  
+                  return (
+                    <Link
+                      key={n.id}
+                      href={href}
+                      onClick={() => {
+                        markAsRead(n.id);
+                        setIsOpen(false);
+                      }}
+                      className={`block px-4 py-3 hover:bg-white/[0.02] transition border-b border-white/[0.02] ${
+                        !n.read ? 'bg-cyan-500/[0.03]' : ''
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-lg">{getIcon(n.type)}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm ${n.read ? 'text-white/50' : 'text-white/80'}`}>
+                            {n.title}
+                          </p>
+                          {n.body && (
+                            <p className="text-xs text-white/30 mt-0.5 truncate">{n.body}</p>
+                          )}
+                          <p className="text-[10px] text-white/20 mt-1">{formatTime(n.created_at)}</p>
+                        </div>
+                        {!n.read && (
+                          <div className="w-2 h-2 bg-cyan-500 rounded-full flex-shrink-0 mt-1.5" />
                         )}
-                        <p className="text-[10px] text-white/20 mt-1">{formatTime(n.created_at)}</p>
                       </div>
-                      {!n.read && (
-                        <div className="w-2 h-2 bg-cyan-500 rounded-full flex-shrink-0 mt-1.5" />
-                      )}
-                    </div>
-                  </Link>
-                ))
+                    </Link>
+                  );
+                })
               )}
             </div>
           </div>

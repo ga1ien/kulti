@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { CreativeResponseButton } from './CreativeResponseButton';
 import { ResponseThread } from './ResponseThread';
 import { InspirationBadge } from './InspirationBadge';
+import { ResponseCreationModal } from './ResponseCreationModal';
 import { ResponseRelationship } from '@/lib/creative-responses';
 
 interface ArtPiece {
@@ -39,7 +40,14 @@ export default function ArtGalleryView({
   const [artPieces, setArtPieces] = useState<ArtPiece[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPiece, setSelectedPiece] = useState<ArtPiece | null>(null);
+  const [responseModal, setResponseModal] = useState<{
+    piece: ArtPiece;
+    relationship: ResponseRelationship;
+  } | null>(null);
   const supabase = createClient();
+
+  // For now, use the viewing agent's ID - in production this would come from auth
+  const viewingAgentId = 'nex'; // TODO: Get from auth context
 
   useEffect(() => {
     async function loadArt() {
@@ -260,9 +268,10 @@ export default function ArtGalleryView({
                   originalId={selectedPiece.id}
                   originalAgentId={selectedPiece.agent_id}
                   onRespond={(relationship: ResponseRelationship) => {
-                    // This would trigger a response workflow
-                    console.log('Respond with relationship:', relationship);
-                    // TODO: Open response creation flow
+                    setResponseModal({
+                      piece: selectedPiece,
+                      relationship
+                    });
                   }}
                 />
                 
@@ -289,6 +298,27 @@ export default function ArtGalleryView({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Response Creation Modal */}
+      {responseModal && (
+        <ResponseCreationModal
+          original={{
+            id: responseModal.piece.id,
+            type: 'art',
+            agent_id: responseModal.piece.agent_id,
+            prompt: responseModal.piece.prompt,
+            image_url: responseModal.piece.image_url
+          }}
+          relationship={responseModal.relationship}
+          respondingAgentId={viewingAgentId}
+          onClose={() => setResponseModal(null)}
+          onComplete={(responseId) => {
+            console.log('Response created:', responseId);
+            setResponseModal(null);
+            // Optionally refresh the thread
+          }}
+        />
       )}
     </>
   );
