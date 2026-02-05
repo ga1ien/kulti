@@ -147,6 +147,7 @@ export default function WatchPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'code' | 'preview' | 'art'>('code');
+  const [userSelectedTab, setUserSelectedTab] = useState(false); // Track if user manually switched
   const [showChat, setShowChat] = useState(false);
 
   const codeRef = useRef<HTMLDivElement>(null);
@@ -280,6 +281,10 @@ export default function WatchPage() {
     if (data.code) {
       const { filename, content, action } = data.code;
       typeCode(filename, content);
+      // Auto-switch to code tab if user hasn't manually selected
+      if (!userSelectedTab) {
+        setActiveTab('code');
+      }
       setCodeFiles(prev => {
         const newMap = new Map(prev);
         const existing = newMap.get(filename);
@@ -342,7 +347,13 @@ export default function WatchPage() {
     if (data.status) setSession(prev => prev ? { ...prev, status: data.status === 'working' ? 'live' : data.status } : prev);
     if (data.task) setSession(prev => prev ? { ...prev, current_task: data.task.title } : prev);
     if (data.preview?.url) setSession(prev => prev ? { ...prev, preview_url: data.preview.url } : prev);
-  }, [typeCode, typeThought]);
+    // Auto-switch to art tab when art events arrive
+    if (data.art || data.art_start || data.art_complete) {
+      if (!userSelectedTab) {
+        setActiveTab('art');
+      }
+    }
+  }, [typeCode, typeThought, userSelectedTab]);
 
   // WebSocket connection (local dev or production)
   useEffect(() => {
@@ -377,6 +388,12 @@ export default function WatchPage() {
       const { data } = await supabase.from('ai_agent_sessions').select('*').eq('agent_id', username).single();
       if (!data) { setError('Agent not found'); setLoading(false); return; }
       setSession(data);
+      // Set initial tab based on creation type
+      if (data.creation_type === 'art' || data.creation_type === 'image') {
+        setActiveTab('art');
+      } else if (data.creation_type === 'code') {
+        setActiveTab('code');
+      }
       setLoading(false);
 
       const { data: events } = await supabase
@@ -685,24 +702,33 @@ export default function WatchPage() {
         {/* Tab bar with file tabs */}
         <div className="h-12 border-b border-white/[0.04] flex items-center bg-black/30 backdrop-blur-xl">
           <div className="flex items-center px-4 gap-1">
-            <button
-              onClick={() => setActiveTab('code')}
-              className={`px-4 py-1.5 rounded-lg text-sm transition ${activeTab === 'code' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/50'}`}
-            >
-              code
-            </button>
-            <button
-              onClick={() => setActiveTab('preview')}
-              className={`px-4 py-1.5 rounded-lg text-sm transition ${activeTab === 'preview' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/50'}`}
-            >
-              preview
-            </button>
-            <button
-              onClick={() => setActiveTab('art')}
-              className={`px-4 py-1.5 rounded-lg text-sm transition ${activeTab === 'art' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/50'}`}
-            >
-              art
-            </button>
+            {/* Show code tab for code-related creation types or if there's code content */}
+            {(session.creation_type === 'code' || session.creation_type === 'other' || fileList.length > 0) && (
+              <button
+                onClick={() => { setActiveTab('code'); setUserSelectedTab(true); }}
+                className={`px-4 py-1.5 rounded-lg text-sm transition ${activeTab === 'code' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/50'}`}
+              >
+                code
+              </button>
+            )}
+            {/* Show preview tab if there's a preview URL */}
+            {session.preview_url && (
+              <button
+                onClick={() => { setActiveTab('preview'); setUserSelectedTab(true); }}
+                className={`px-4 py-1.5 rounded-lg text-sm transition ${activeTab === 'preview' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/50'}`}
+              >
+                preview
+              </button>
+            )}
+            {/* Show art tab for art/image creation types or always (gallery exists) */}
+            {(session.creation_type === 'art' || session.creation_type === 'image' || session.creation_type === 'other' || true) && (
+              <button
+                onClick={() => { setActiveTab('art'); setUserSelectedTab(true); }}
+                className={`px-4 py-1.5 rounded-lg text-sm transition ${activeTab === 'art' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/50'}`}
+              >
+                art
+              </button>
+            )}
           </div>
           {/* Gallery link */}
           <Link
