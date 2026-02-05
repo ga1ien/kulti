@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import StreamChat from '@/components/ai/StreamChat';
 import ArtStreamView from '@/components/ai/ArtStreamView';
 import MusicStreamView from '@/components/ai/MusicStreamView';
+import LiveArtDisplay from '@/components/ai/LiveArtDisplay';
 
 interface AgentSession {
   id: string;
@@ -144,7 +145,7 @@ export default function WatchPage() {
   const [seenHashes, setSeenHashes] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
+  const [activeTab, setActiveTab] = useState<'code' | 'preview' | 'art'>('code');
   const [showChat, setShowChat] = useState(false);
 
   const codeRef = useRef<HTMLDivElement>(null);
@@ -691,7 +692,20 @@ export default function WatchPage() {
             >
               preview
             </button>
+            <button
+              onClick={() => setActiveTab('art')}
+              className={`px-4 py-1.5 rounded-lg text-sm transition ${activeTab === 'art' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white/50'}`}
+            >
+              art
+            </button>
           </div>
+          {/* Gallery link */}
+          <Link
+            href={`/${username}/gallery`}
+            className="ml-auto mr-4 text-xs text-white/30 hover:text-white/50 transition"
+          >
+            view gallery →
+          </Link>
           {/* File tabs when in code view */}
           {activeTab === 'code' && fileList.length > 0 && (
             <div className="flex items-center gap-1 ml-4 overflow-x-auto scrollbar-hide">
@@ -756,7 +770,7 @@ export default function WatchPage() {
                 </div>
               )}
             </div>
-          ) : (
+          ) : activeTab === 'preview' ? (
             /* Preview view */
             <div className="h-full p-6">
               {session.preview_url ? (
@@ -775,6 +789,11 @@ export default function WatchPage() {
                   <div className="text-white/20 text-sm">preview not available</div>
                 </div>
               )}
+            </div>
+          ) : (
+            /* Art view */
+            <div className="h-full">
+              <LiveArtDisplay agentId={username} sessionId={session.id} />
             </div>
           )}
         </div>

@@ -178,6 +178,56 @@ async function persistToSupabase(agentId: string, update: any, state?: AgentStat
       console.log(`[Supabase] Queued ${entries.length} terminal entries`);
     }
 
+    // Persist art events
+    if (update.art) {
+      if (update.art.status === 'generating') {
+        events.push({
+          session_id: session.id,
+          type: 'art_start',
+          data: {
+            prompt: update.art.prompt,
+            model: update.art.model,
+          },
+        });
+        console.log(`[Supabase] Queued art_start`);
+      }
+      
+      if (update.art.status === 'complete' && update.art.image_url) {
+        // Save to gallery
+        const { data: artData, error: artError } = await supabase
+          .from('ai_art_gallery')
+          .insert({
+            agent_id: agentId,
+            session_id: session.id,
+            image_url: update.art.image_url,
+            prompt: update.art.prompt || '',
+            model: update.art.model || 'unknown',
+            metadata: update.art.metadata || {},
+            likes_count: 0,
+          })
+          .select()
+          .single();
+        
+        if (artError) {
+          console.error('[Supabase] Art gallery insert error:', artError);
+        } else {
+          console.log(`[Supabase] Saved art to gallery: ${artData?.id}`);
+        }
+        
+        events.push({
+          session_id: session.id,
+          type: 'art_complete',
+          data: {
+            art_id: artData?.id,
+            image_url: update.art.image_url,
+            prompt: update.art.prompt,
+            model: update.art.model,
+          },
+        });
+        console.log(`[Supabase] Queued art_complete`);
+      }
+    }
+
     // Insert all events
     if (events.length > 0) {
       const { error } = await supabase.from('ai_stream_events').insert(events);
