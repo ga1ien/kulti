@@ -88,8 +88,10 @@ async function main(): Promise<void> {
       thought: {
         type: "prompt",
         content: `User: ${truncate(msg, 500)}`,
+        priority: "headline",
         metadata: {},
       },
+      goal: { title: truncate(msg, 200) },
       status: "working",
     };
   } else if (hook_name === "Stop") {
@@ -97,8 +99,10 @@ async function main(): Promise<void> {
       thought: {
         type: "evaluation",
         content: "Turn complete",
+        priority: "headline",
         metadata: {},
       },
+      milestone: { label: "Session complete", completed: true },
       status: "thinking",
     };
   } else if (hook_name === "SubagentStart") {
@@ -112,6 +116,7 @@ async function main(): Promise<void> {
       thought: {
         type: "reasoning",
         content: `Subagent started: ${name}`,
+        priority: "headline",
         metadata: { tool: "subagent" },
       },
     };
@@ -126,8 +131,10 @@ async function main(): Promise<void> {
       thought: {
         type: "observation",
         content: `Subagent finished: ${name}`,
+        priority: "working",
         metadata: { tool: "subagent" },
       },
+      milestone: { label: `Subagent ${name} complete`, completed: true },
     };
   }
 

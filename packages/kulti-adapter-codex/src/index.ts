@@ -49,8 +49,10 @@ async function main(): Promise<void> {
     thought: {
       type: "evaluation",
       content: message,
+      priority: "working",
       metadata: {},
     },
+    milestone: { label: "Turn complete", completed: true },
     status: "thinking",
   });
 }

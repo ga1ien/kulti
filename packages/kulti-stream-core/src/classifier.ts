@@ -11,7 +11,13 @@
  *   - Codex CLI:   shell, create_file, apply_diff, read_file
  */
 
-import type { KultiPayload, NormalizedToolEvent } from "./types";
+import type {
+  KultiPayload,
+  KultiDiff,
+  KultiDiffHunk,
+  NormalizedToolEvent,
+  ThoughtPriority,
+} from "./types";
 import { get_language } from "./language";
 import { short_path, truncate } from "./helpers";
 
@@ -64,6 +70,28 @@ export function normalize_tool_name(raw: string): CanonicalTool {
   return TOOL_NAME_MAP[raw.toLowerCase()] ?? "unknown";
 }
 
+// ── Priority assignment ─────────────────────────────────────────────────
+
+/** Assign visual priority based on canonical tool type */
+function get_priority(canonical: CanonicalTool, phase: "before" | "after"): ThoughtPriority {
+  if (phase === "after") return "detail";
+
+  switch (canonical) {
+    case "delegate":
+      return "headline";
+    case "exec":
+    case "write_file":
+    case "edit_file":
+      return "working";
+    case "read_file":
+    case "search":
+    case "memory":
+      return "detail";
+    default:
+      return "working";
+  }
+}
+
 // ── Before-tool classification ─────────────────────────────────────────
 
 export function classify_before_tool(
@@ -72,6 +100,7 @@ export function classify_before_tool(
   const canonical = normalize_tool_name(event.tool_name);
   const params = event.params;
   const meta: Record<string, unknown> = { tool: event.tool_name };
+  const priority = get_priority(canonical, "before");
 
   let thought: KultiPayload["thought"];
 
@@ -81,7 +110,7 @@ export function classify_before_tool(
       const desc = str_param(params, "description");
       const label = desc ? desc : cmd.slice(0, 120) || "running command";
       meta.command = cmd.slice(0, 200);
-      thought = { type: "tool", content: `Running: ${label}`, metadata: meta };
+      thought = { type: "tool", content: `Running: ${label}`, priority, metadata: meta };
       break;
     }
 
@@ -91,6 +120,7 @@ export function classify_before_tool(
       thought = {
         type: "decision",
         content: `Writing: ${short_path(path)}`,
+        priority,
         metadata: meta,
       };
       break;
@@ -102,6 +132,7 @@ export function classify_before_tool(
       thought = {
         type: "decision",
         content: `Editing: ${short_path(path)}`,
+        priority,
         metadata: meta,
       };
       break;
@@ -113,6 +144,7 @@ export function classify_before_tool(
       thought = {
         type: "observation",
         content: `Reading: ${short_path(path)}`,
+        priority,
         metadata: meta,
       };
       break;
@@ -125,6 +157,7 @@ export function classify_before_tool(
       thought = {
         type: "observation",
         content: `Searching: ${pattern}`,
+        priority,
         metadata: meta,
       };
       break;
@@ -136,6 +169,7 @@ export function classify_before_tool(
       thought = {
         type: "context",
         content: `Browser: ${action}${target ? ` ${target}` : ""}`,
+        priority,
         metadata: meta,
       };
       break;
@@ -146,6 +180,7 @@ export function classify_before_tool(
       thought = {
         type: "context",
         content: `Fetching: ${url}`,
+        priority,
         metadata: meta,
       };
       break;
@@ -156,6 +191,7 @@ export function classify_before_tool(
       thought = {
         type: "context",
         content: `Searching web: ${query}`,
+        priority,
         metadata: meta,
       };
       break;
@@ -166,6 +202,7 @@ export function classify_before_tool(
       thought = {
         type: "context",
         content: `Recalling: ${query}`,
+        priority,
         metadata: meta,
       };
       break;
@@ -177,6 +214,7 @@ export function classify_before_tool(
       thought = {
         type: "reasoning",
         content: `Delegating: ${desc.slice(0, 200)}`,
+        priority,
         metadata: meta,
       };
       break;
@@ -186,6 +224,7 @@ export function classify_before_tool(
       thought = {
         type: "tool",
         content: `Using: ${event.tool_name}`,
+        priority,
         metadata: meta,
       };
       break;
@@ -203,6 +242,9 @@ export function classify_after_tool(
   const canonical = normalize_tool_name(event.tool_name);
   const params = event.params;
 
+  // Check for tool errors
+  const error_payload = detect_error(event);
+
   switch (canonical) {
     case "write_file": {
       const path = resolve_path(params);
@@ -216,6 +258,7 @@ export function classify_after_tool(
           action: "write",
         },
         stats: { files: 1 },
+        ...(error_payload !== null ? { error: error_payload } : {}),
       };
     }
 
@@ -225,22 +268,37 @@ export function classify_after_tool(
       const old_str = str_param(params, "old_string");
       const new_str = str_param(params, "new_string");
 
-      let diff = `--- ${fname}\n`;
+      // Build structured diff
+      const hunk: KultiDiffHunk = {
+        start: 0,
+        removed: old_str.split("\n"),
+        added: new_str.split("\n"),
+      };
+      const diff: KultiDiff = {
+        filename: fname,
+        language: get_language(fname),
+        hunks: [hunk],
+      };
+
+      // Also keep legacy code field for backward compat
+      let legacy_diff = `--- ${fname}\n`;
       for (const line of old_str.split("\n")) {
-        diff += `- ${line}\n`;
+        legacy_diff += `- ${line}\n`;
       }
       for (const line of new_str.split("\n")) {
-        diff += `+ ${line}\n`;
+        legacy_diff += `+ ${line}\n`;
       }
 
       return {
         code: {
           filename: fname,
           language: get_language(fname),
-          content: truncate(diff, 5000),
+          content: truncate(legacy_diff, 5000),
           action: "edit",
         },
+        diff,
         stats: { files: 1 },
+        ...(error_payload !== null ? { error: error_payload } : {}),
       };
     }
 
@@ -259,12 +317,56 @@ export function classify_after_tool(
         terminal: lines,
         terminal_append: true,
         stats: { commands: 1 },
+        ...(error_payload !== null ? { error: error_payload } : {}),
       };
     }
 
     default:
+      if (error_payload !== null) {
+        return { error: error_payload };
+      }
       return null;
   }
+}
+
+// ── Error detection ────────────────────────────────────────────────────
+
+function detect_error(event: NormalizedToolEvent): KultiPayload["error"] | null {
+  if (event.result === undefined || event.result === null) return null;
+
+  const result_str = typeof event.result === "string"
+    ? event.result
+    : JSON.stringify(event.result);
+
+  // Detect common error patterns
+  const error_patterns = [
+    /error:/i,
+    /Error: /,
+    /ENOENT/,
+    /EACCES/,
+    /failed/i,
+    /exit code [1-9]/i,
+    /command not found/i,
+    /compilation failed/i,
+    /type error/i,
+    /syntax error/i,
+  ];
+
+  const has_error = error_patterns.some(p => p.test(result_str));
+  if (!has_error) return null;
+
+  // Extract meaningful error message
+  const lines = result_str.split("\n");
+  const error_line = lines.find(l =>
+    /error|Error|ENOENT|EACCES|failed|exit code/i.test(l),
+  );
+
+  const file = resolve_path(event.params);
+  return {
+    message: truncate(error_line ?? lines[0] ?? "Unknown error", 500),
+    file: file !== "unknown" ? file : undefined,
+    stack: truncate(result_str, 2000),
+  };
 }
 
 // ── Internal helpers ───────────────────────────────────────────────────

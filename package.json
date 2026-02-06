@@ -38,7 +38,7 @@
     "db:restore": "./scripts/restore-db.sh",
     "db:verify": "./scripts/verify-backup.sh",
     "build:core": "cd packages/kulti-stream-core && npx tsup src/index.ts --format cjs,esm --dts",
-    "build:adapters": "cd packages/kulti-adapter-claude && npx tsup src/index.ts --format cjs --dts && cd ../kulti-adapter-gemini && npx tsup src/index.ts --format cjs --dts && cd ../kulti-adapter-codex && npx tsup src/index.ts --format cjs --dts",
+    "build:adapters": "cd packages/kulti-adapter-claude && npx tsup src/index.ts --format cjs --dts && cd ../kulti-adapter-gemini && npx tsup src/index.ts --format cjs --dts && cd ../kulti-adapter-codex && npx tsup src/index.ts --format cjs --dts && cd ../kulti-adapter-watcher && npx tsup src/index.ts --format cjs --dts",
     "build:kulti": "cd packages/kulti && npx tsup src/index.ts src/cli.ts --format cjs,esm --dts",
     "build:packages": "npm run build:core && npm run build:adapters && npm run build:kulti",
     "build:all": "npm run build:packages && npm run build"

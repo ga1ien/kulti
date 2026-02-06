@@ -5,17 +5,29 @@
  * Uses AbortController for timeouts so hanging requests don't block hooks.
  */
 
-import type { KultiClientConfig, KultiPayload } from "./types";
+import type {
+  KultiClientConfig,
+  KultiPayload,
+  KultiThought,
+  KultiDiff,
+  KultiGoal,
+  KultiMilestone,
+  KultiError,
+} from "./types";
 
 export interface KultiClient {
   send(payload: Partial<KultiPayload>): void;
-  thought(type: KultiPayload["thought"], status?: string): void;
+  thought(thought: KultiThought, status?: string): void;
   code(code: KultiPayload["code"]): void;
+  diff(diff: KultiDiff): void;
   terminal(
     lines: KultiPayload["terminal"],
     append?: boolean,
     stats?: KultiPayload["stats"],
   ): void;
+  goal(goal: KultiGoal): void;
+  milestone(label: string, completed?: boolean): void;
+  error(error: KultiError): void;
 }
 
 export function create_kulti_client(config: KultiClientConfig): KultiClient {
@@ -57,12 +69,28 @@ export function create_kulti_client(config: KultiClientConfig): KultiClient {
       fire({ code, stats: { files: 1 } });
     },
 
+    diff(diff) {
+      fire({ diff, stats: { files: 1 } });
+    },
+
     terminal(terminal, append = true, stats) {
       fire({
         terminal,
         terminal_append: append,
         stats: stats ?? { commands: 1 },
       });
+    },
+
+    goal(goal) {
+      fire({ goal, status: "working" });
+    },
+
+    milestone(label, completed = true) {
+      fire({ milestone: { label, completed } });
+    },
+
+    error(error) {
+      fire({ error, status: "working" });
     },
   };
 }

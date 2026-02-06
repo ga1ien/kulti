@@ -31,11 +31,44 @@ interface CodeFile {
 }
 
 type ThoughtType = 'reasoning' | 'prompt' | 'tool' | 'context' | 'evaluation' | 'decision' | 'observation' | 'general';
+type ThoughtPriority = 'headline' | 'working' | 'detail';
+
+interface GoalState {
+  title: string;
+  description?: string;
+}
+
+interface MilestoneState {
+  label: string;
+  completed: boolean;
+  timestamp: string;
+}
+
+interface ErrorState {
+  message: string;
+  file?: string;
+  line?: number;
+  stack?: string;
+  recovery_strategy?: string;
+  timestamp: string;
+}
+
+interface DiffHunk {
+  start: number;
+  removed: string[];
+  added: string[];
+}
+
+interface DiffState {
+  filename: string;
+  language: string;
+  hunks: DiffHunk[];
+}
 
 interface ThinkingBlock {
   id: string;
   content: string;
-  displayedContent: string; // For typing effect
+  displayedContent: string;
   isTyping: boolean;
   timestamp: string;
   thought_type: ThoughtType;
@@ -45,6 +78,7 @@ interface ThinkingBlock {
     command?: string;
     pattern?: string;
     url?: string;
+    priority?: ThoughtPriority;
   };
 }
 
@@ -70,6 +104,20 @@ function hashContent(content: string): string {
   return hash.toString();
 }
 
+function render_diff_text(diff: DiffState): string {
+  const lines: string[] = [];
+  for (const hunk of diff.hunks) {
+    lines.push(`@@ line ${hunk.start} @@`);
+    for (const line of hunk.removed) {
+      lines.push(`- ${line}`);
+    }
+    for (const line of hunk.added) {
+      lines.push(`+ ${line}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 export default function WatchPage() {
   const params = useParams();
   const agentId = params.agentId as string;
@@ -83,6 +131,11 @@ export default function WatchPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
   const [showChat, setShowChat] = useState(false);
+  const [goal, set_goal] = useState<GoalState | null>(null);
+  const [milestones, set_milestones] = useState<MilestoneState[]>([]);
+  const [recent_errors, set_recent_errors] = useState<ErrorState[]>([]);
+  const [expanded_errors, set_expanded_errors] = useState<Set<number>>(new Set());
+  const [collapsed_details, set_collapsed_details] = useState(true);
 
   const codeRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLSpanElement>(null);
@@ -259,6 +312,30 @@ export default function WatchPage() {
     if (data.status) setSession(prev => prev ? { ...prev, status: data.status === 'working' ? 'live' : data.status } : prev);
     if (data.task) setSession(prev => prev ? { ...prev, current_task: data.task.title } : prev);
     if (data.preview?.url) setSession(prev => prev ? { ...prev, preview_url: data.preview.url } : prev);
+
+    // Handle goal updates
+    if (data.goal) {
+      set_goal(data.goal);
+    }
+
+    // Handle milestones
+    if (data.milestones && Array.isArray(data.milestones)) {
+      set_milestones(data.milestones);
+    }
+
+    // Handle errors
+    if (data.recent_errors && Array.isArray(data.recent_errors)) {
+      set_recent_errors(data.recent_errors);
+    }
+
+    // Handle diff — render as a synthetic code file tab
+    if (data.diff) {
+      const diff_data = data.diff as DiffState;
+      const diff_content = render_diff_text(diff_data);
+      if (diff_content) {
+        typeCode(`${diff_data.filename} (diff)`, diff_content);
+      }
+    }
   }, [typeCode, typeThought]);
 
   // WebSocket connection with exponential backoff reconnection
@@ -509,64 +586,181 @@ export default function WatchPage() {
           )}
         </div>
 
+        {/* Goal & milestones */}
+        {goal !== null && (
+          <div className="px-4 pb-3">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-500/10 to-indigo-500/10 border border-cyan-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="text-sm font-medium text-white/80">{goal.title}</span>
+              </div>
+              {goal.description && (
+                <p className="text-xs text-white/40 mb-2">{goal.description}</p>
+              )}
+              {milestones.length > 0 && (
+                <div className="space-y-1.5 mt-2">
+                  {milestones.map((ms, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs">
+                      {ms.completed ? (
+                        <svg className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <div className="w-3.5 h-3.5 rounded-full border border-white/20 flex-shrink-0" />
+                      )}
+                      <span className={ms.completed ? 'text-white/40 line-through' : 'text-white/60'}>{ms.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Errors */}
+        {recent_errors.length > 0 && (
+          <div className="px-4 pb-3">
+            <div className="space-y-2">
+              {recent_errors.slice(-3).map((err, idx) => (
+                <div key={idx} className="p-3 rounded-xl bg-red-500/10 border border-red-500/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <svg className="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span className="text-xs font-medium text-red-400 truncate">{err.message}</span>
+                  </div>
+                  {err.file && (
+                    <div className="text-[10px] text-red-400/60 font-mono ml-6">
+                      {err.file}{err.line !== undefined ? `:${err.line}` : ''}
+                    </div>
+                  )}
+                  {err.recovery_strategy && (
+                    <div className="text-[10px] text-emerald-400/60 ml-6 mt-1">
+                      Recovery: {err.recovery_strategy}
+                    </div>
+                  )}
+                  {err.stack && (
+                    <div className="mt-1.5 ml-6">
+                      <button
+                        onClick={() => set_expanded_errors(prev => {
+                          const next = new Set(prev);
+                          if (next.has(idx)) { next.delete(idx); } else { next.add(idx); }
+                          return next;
+                        })}
+                        className="text-[10px] text-red-400/40 hover:text-red-400/60 transition"
+                      >
+                        {expanded_errors.has(idx) ? '▼ hide stack' : '▶ show stack'}
+                      </button>
+                      {expanded_errors.has(idx) && (
+                        <pre className="mt-1 text-[10px] text-red-400/40 font-mono whitespace-pre-wrap max-h-32 overflow-auto">
+                          {err.stack}
+                        </pre>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Thought stream header with detail toggle */}
+        <div className="flex items-center justify-between px-4 pt-2 pb-1">
+          <span className="text-[10px] text-white/20 uppercase tracking-wider">stream of consciousness</span>
+          <button
+            onClick={() => set_collapsed_details(!collapsed_details)}
+            className="text-[10px] text-white/20 hover:text-white/40 transition"
+          >
+            {collapsed_details ? 'show all' : 'hide details'}
+          </button>
+        </div>
+
         {/* Thoughts - structured with type badges */}
-        <div ref={thinkingRef} className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-hide">
+        <div ref={thinkingRef} className="flex-1 overflow-y-auto p-4 pt-1 space-y-2 scrollbar-hide">
           {thinking.length === 0 ? (
             <div className="text-white/15 text-sm text-center py-12 italic">
               waiting for thoughts...
             </div>
           ) : (
-            thinking.map((block, i) => {
-              const isLatest = i === thinking.length - 1;
-              const isRecent = i >= thinking.length - 5;
-              const opacity = isLatest ? 1 : isRecent ? 0.7 : 0.35;
-              const colors = THOUGHT_COLORS[block.thought_type] || THOUGHT_COLORS.general;
-              const is_prompt = block.thought_type === 'prompt';
+            thinking
+              .filter((block, i) => {
+                const priority = block.metadata?.priority || 'working';
+                if (priority === 'detail' && collapsed_details && i < thinking.length - 3) {
+                  return false;
+                }
+                return true;
+              })
+              .map((block, i, filtered_arr) => {
+                const priority = block.metadata?.priority || 'working';
+                const is_headline = priority === 'headline';
+                const is_detail = priority === 'detail';
+                const is_latest = i === filtered_arr.length - 1;
+                const is_recent = i >= filtered_arr.length - 5;
+                const opacity = is_headline ? 1 : is_latest ? 1 : is_recent ? 0.7 : 0.35;
+                const colors = THOUGHT_COLORS[block.thought_type] || THOUGHT_COLORS.general;
+                const is_prompt = block.thought_type === 'prompt';
 
-              return (
-                <div
-                  key={block.id}
-                  className={`
-                    p-3 rounded-xl transition-all duration-500
-                    ${isLatest
-                      ? `bg-gradient-to-br ${colors.bg} border ${colors.border} shadow-lg`
-                      : 'bg-white/[0.02] border border-white/[0.04]'
-                    }
-                  `}
-                  style={{ opacity }}
-                >
-                  {/* Type badge + metadata */}
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider font-medium ${colors.badge}`}>
-                      {colors.label}
-                    </span>
-                    {block.metadata?.tool && block.thought_type !== 'prompt' && (
-                      <span className="text-[10px] text-white/25 font-mono">
-                        {block.metadata.tool}
+                return (
+                  <div
+                    key={block.id}
+                    className={`
+                      ${is_detail ? 'p-2' : 'p-3'} rounded-xl transition-all duration-500
+                      ${is_headline
+                        ? `bg-gradient-to-br ${colors.bg} border ${colors.border} shadow-lg shadow-cyan-500/10`
+                        : is_latest
+                          ? `bg-gradient-to-br ${colors.bg} border ${colors.border} shadow-lg`
+                          : 'bg-white/[0.02] border border-white/[0.04]'
+                      }
+                    `}
+                    style={{ opacity }}
+                  >
+                    {/* Type badge + priority + metadata */}
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider font-medium ${colors.badge}`}>
+                        {colors.label}
                       </span>
-                    )}
-                    {block.metadata?.file && (
-                      <span className="text-[10px] text-white/30 font-mono truncate max-w-[180px]">
-                        {block.metadata.file.split('/').slice(-2).join('/')}
-                      </span>
-                    )}
-                  </div>
+                      {is_headline && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider font-medium bg-cyan-500/20 text-cyan-400">
+                          key
+                        </span>
+                      )}
+                      {block.metadata?.tool && block.thought_type !== 'prompt' && (
+                        <span className="text-[10px] text-white/25 font-mono">
+                          {block.metadata.tool}
+                        </span>
+                      )}
+                      {block.metadata?.file && (
+                        <span className="text-[10px] text-white/30 font-mono truncate max-w-[180px]">
+                          {block.metadata.file.split('/').slice(-2).join('/')}
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Content */}
-                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${is_prompt ? 'text-white/80 font-medium' : 'text-white/60'}`}>
-                    {block.displayedContent || block.content}
-                    {(isLatest || block.isTyping) && (
-                      <span className="inline-block w-1.5 h-3.5 bg-cyan-400/70 ml-0.5 animate-pulse" />
-                    )}
-                  </p>
+                    {/* Content — sized by priority */}
+                    <p className={`leading-relaxed whitespace-pre-wrap ${
+                      is_headline
+                        ? 'text-base text-white/90 font-medium'
+                        : is_detail
+                          ? 'text-xs text-white/40'
+                          : is_prompt
+                            ? 'text-sm text-white/80 font-medium'
+                            : 'text-sm text-white/60'
+                    }`}>
+                      {block.displayedContent || block.content}
+                      {(is_latest || block.isTyping) && (
+                        <span className="inline-block w-1.5 h-3.5 bg-cyan-400/70 ml-0.5 animate-pulse" />
+                      )}
+                    </p>
 
-                  {/* Timestamp */}
-                  <div className="mt-1.5 text-[10px] text-white/15">
-                    {new Date(block.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    {/* Timestamp */}
+                    <div className={`mt-1.5 text-[10px] ${is_detail ? 'text-white/10' : 'text-white/15'}`}>
+                      {new Date(block.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })
           )}
         </div>
       </div>
@@ -643,12 +837,38 @@ export default function WatchPage() {
                   </div>
                   {/* Code content with typing effect - CONTAINED overflow */}
                   <div className="flex-1 p-4 bg-black/50 overflow-auto min-h-0">
-                    <pre className="font-mono text-[13px] leading-relaxed text-white/70 whitespace-pre w-max">
-                      {currentFile.displayedContent}
-                      {currentFile.isTyping && (
-                        <span ref={cursorRef} className="inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-0.5" />
-                      )}
-                    </pre>
+                    {currentFile.filename.endsWith('(diff)') ? (
+                      <pre className="font-mono text-[13px] leading-relaxed whitespace-pre w-max">
+                        {(currentFile.displayedContent || '').split('\n').map((line, line_idx) => {
+                          const is_removed = line.startsWith('- ');
+                          const is_added = line.startsWith('+ ');
+                          const is_hunk_header = line.startsWith('@@');
+                          return (
+                            <div
+                              key={line_idx}
+                              className={
+                                is_removed ? 'bg-red-500/10 text-red-400/80' :
+                                is_added ? 'bg-emerald-500/10 text-emerald-400/80' :
+                                is_hunk_header ? 'text-cyan-400/50' :
+                                'text-white/70'
+                              }
+                            >
+                              {line}
+                            </div>
+                          );
+                        })}
+                        {currentFile.isTyping && (
+                          <span ref={cursorRef} className="inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-0.5" />
+                        )}
+                      </pre>
+                    ) : (
+                      <pre className="font-mono text-[13px] leading-relaxed text-white/70 whitespace-pre w-max">
+                        {currentFile.displayedContent}
+                        {currentFile.isTyping && (
+                          <span ref={cursorRef} className="inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-0.5" />
+                        )}
+                      </pre>
+                    )}
                   </div>
                 </div>
               )}

@@ -55,8 +55,10 @@ async function main(): Promise<void> {
         thought: {
           type: "prompt",
           content: prompt ? `User: ${prompt}` : "Agent starting",
+          priority: "headline",
           metadata: {},
         },
+        goal: { title: prompt ? truncate(prompt, 200) : "Gemini session" },
         status: "working",
       };
       break;
@@ -67,6 +69,7 @@ async function main(): Promise<void> {
         thought: {
           type: "evaluation",
           content: "Agent turn complete",
+          priority: "working",
           metadata: {},
         },
         status: "thinking",
@@ -81,6 +84,7 @@ async function main(): Promise<void> {
         thought: {
           type: "reasoning",
           content: model ? `Thinking (${model})...` : "Thinking...",
+          priority: "detail",
           metadata: model ? { model } : {},
         },
         status: "working",
@@ -99,6 +103,7 @@ async function main(): Promise<void> {
         thought: {
           type: "general",
           content: response || "Model responded",
+          priority: "working",
           metadata: {},
         },
       };
@@ -117,6 +122,7 @@ async function main(): Promise<void> {
           content: tools
             ? `Considering tools: ${truncate(tools, 200)}`
             : "Selecting tools",
+          priority: "detail",
           metadata: tools ? { tools } : {},
         },
         status: "working",
@@ -129,8 +135,10 @@ async function main(): Promise<void> {
         thought: {
           type: "evaluation",
           content: "Session ended",
+          priority: "headline",
           metadata: {},
         },
+        milestone: { label: "Gemini session complete", completed: true },
         status: "thinking",
       };
       break;

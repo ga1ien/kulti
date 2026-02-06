@@ -7,9 +7,15 @@
 
 export type {
   ThoughtType,
+  ThoughtPriority,
   KultiThought,
   KultiCode,
+  KultiDiff,
+  KultiDiffHunk,
   KultiTerminalLine,
+  KultiGoal,
+  KultiMilestone,
+  KultiError,
   KultiPayload,
   KultiClientConfig,
   ToolPhase,

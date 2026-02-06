@@ -71,6 +71,39 @@ interface CodeState {
   timestamp: string;
 }
 
+// Goal, milestone, diff, error types from stream-core
+interface GoalState {
+  title: string;
+  description?: string;
+}
+
+interface MilestoneState {
+  label: string;
+  completed: boolean;
+  timestamp: string;
+}
+
+interface DiffHunk {
+  start: number;
+  removed: string[];
+  added: string[];
+}
+
+interface DiffState {
+  filename: string;
+  language: string;
+  hunks: DiffHunk[];
+}
+
+interface ErrorState {
+  message: string;
+  file?: string;
+  line?: number;
+  stack?: string;
+  recovery_strategy?: string;
+  timestamp: string;
+}
+
 // Agent state
 interface AgentState {
   agent_id: string;
@@ -82,6 +115,10 @@ interface AgentState {
   thinking: string;
   thoughts: StructuredThought[];
   code: CodeState | null;
+  diff: DiffState | null;
+  goal: GoalState | null;
+  milestones: MilestoneState[];
+  recent_errors: ErrorState[];
   stats: { files: number; commands: number; start_time: number };
   preview: { url: string | null; domain: string };
   viewers: Set<WebSocket>;
@@ -104,8 +141,12 @@ interface UpdatePayload {
   terminalAppend?: boolean;
   terminal_append?: boolean;
   thinking?: string;
-  thought?: { type: string; content: string; metadata?: Record<string, unknown> };
+  thought?: { type: string; content: string; priority?: string; metadata?: Record<string, unknown> };
   code?: { filename: string; language: string; content: string; action: string } | Array<{ filename: string; language: string; content: string; action: string }>;
+  diff?: { filename: string; language: string; hunks: DiffHunk[] };
+  goal?: { title: string; description?: string };
+  milestone?: { label: string; completed: boolean };
+  error?: { message: string; file?: string; line?: number; stack?: string; recovery_strategy?: string };
   preview?: { url?: string; domain?: string };
   stats?: { files?: number; commands?: number };
   art?: { status: string; prompt?: string; model?: string; image_url?: string; metadata?: Record<string, unknown> };
@@ -129,6 +170,10 @@ function get_or_create_agent(agent_id: string): AgentState {
     thinking: '',
     thoughts: [],
     code: null,
+    diff: null,
+    goal: null,
+    milestones: [],
+    recent_errors: [],
     stats: { files: 0, commands: 0, start_time: Date.now() },
     preview: { url: null, domain: `${agent_id}.preview.kulti.club` },
     viewers: new Set(),
@@ -204,6 +249,10 @@ function state_to_message(state: AgentState): Record<string, unknown> {
     thinking: state.thinking,
     thoughts: state.thoughts,
     code: state.code,
+    diff: state.diff,
+    goal: state.goal,
+    milestones: state.milestones,
+    recent_errors: state.recent_errors,
     preview: state.preview,
     stats: state.stats,
     viewers: state.viewer_count,
@@ -267,14 +316,17 @@ function apply_update(update: UpdatePayload, is_hook: boolean): void {
   // Legacy thinking
   if (update.thinking !== undefined) state.thinking = update.thinking;
 
-  // Structured thought
+  // Structured thought (now includes priority pass-through)
   if (update.thought) {
     const thought: StructuredThought = {
       id: `thought-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: (update.thought.type || 'general') as StructuredThought['type'],
       content: update.thought.content,
       timestamp: new Date().toISOString(),
-      metadata: update.thought.metadata as StructuredThought['metadata'],
+      metadata: {
+        ...(update.thought.metadata !== undefined ? update.thought.metadata as Record<string, unknown> : {}),
+        ...(update.thought.priority !== undefined ? { priority: update.thought.priority } : {}),
+      },
     };
     state.thoughts.push(thought);
     if (state.thoughts.length > 100) {
@@ -311,6 +363,50 @@ function apply_update(update: UpdatePayload, is_hook: boolean): void {
       if (update.stats.commands) state.stats.commands += update.stats.commands;
     } else {
       state.stats = { ...state.stats, ...update.stats };
+    }
+  }
+
+  // Diff
+  if (update.diff) {
+    state.diff = {
+      filename: update.diff.filename,
+      language: update.diff.language,
+      hunks: update.diff.hunks,
+    };
+  }
+
+  // Goal
+  if (update.goal) {
+    state.goal = {
+      title: update.goal.title,
+      ...(update.goal.description !== undefined ? { description: update.goal.description } : {}),
+    };
+  }
+
+  // Milestone (append to list)
+  if (update.milestone) {
+    state.milestones.push({
+      label: update.milestone.label,
+      completed: update.milestone.completed,
+      timestamp: new Date().toISOString(),
+    });
+    if (state.milestones.length > 50) {
+      state.milestones = state.milestones.slice(-50);
+    }
+  }
+
+  // Error (append to recent_errors, keep last 10)
+  if (update.error) {
+    state.recent_errors.push({
+      message: update.error.message,
+      ...(update.error.file !== undefined ? { file: update.error.file } : {}),
+      ...(update.error.line !== undefined ? { line: update.error.line } : {}),
+      ...(update.error.stack !== undefined ? { stack: update.error.stack } : {}),
+      ...(update.error.recovery_strategy !== undefined ? { recovery_strategy: update.error.recovery_strategy } : {}),
+      timestamp: new Date().toISOString(),
+    });
+    if (state.recent_errors.length > 10) {
+      state.recent_errors = state.recent_errors.slice(-10);
     }
   }
 
@@ -365,7 +461,7 @@ async function persist_to_supabase(agent_id: string, update: UpdatePayload, stat
 
     const events: Array<{ session_id: string; type: string; data: Record<string, unknown> }> = [];
 
-    // Structured thought
+    // Structured thought (now includes priority)
     if (update.thought) {
       events.push({
         session_id: session.id,
@@ -373,7 +469,60 @@ async function persist_to_supabase(agent_id: string, update: UpdatePayload, stat
         data: {
           thoughtType: update.thought.type || 'general',
           content: update.thought.content,
+          priority: update.thought.priority,
           metadata: update.thought.metadata || {},
+        },
+      });
+    }
+
+    // Diff
+    if (update.diff) {
+      events.push({
+        session_id: session.id,
+        type: 'diff',
+        data: {
+          filename: update.diff.filename,
+          language: update.diff.language,
+          hunks: update.diff.hunks,
+        },
+      });
+    }
+
+    // Goal
+    if (update.goal) {
+      events.push({
+        session_id: session.id,
+        type: 'goal',
+        data: {
+          title: update.goal.title,
+          description: update.goal.description,
+        },
+      });
+    }
+
+    // Milestone
+    if (update.milestone) {
+      events.push({
+        session_id: session.id,
+        type: 'milestone',
+        data: {
+          label: update.milestone.label,
+          completed: update.milestone.completed,
+        },
+      });
+    }
+
+    // Error
+    if (update.error) {
+      events.push({
+        session_id: session.id,
+        type: 'error',
+        data: {
+          message: update.error.message,
+          file: update.error.file,
+          line: update.error.line,
+          stack: update.error.stack,
+          recovery_strategy: update.error.recovery_strategy,
         },
       });
     }
