@@ -16,7 +16,7 @@ export type {
   NormalizedToolEvent,
 } from "./types";
 
-export { create_kulti_client } from "./client";
+export { create_kulti_client, validate_connection } from "./client";
 export type { KultiClient } from "./client";
 
 export {

@@ -14,6 +14,7 @@
  *   KULTI_STREAM_ENABLED - "0" to disable (default: enabled)
  *   KULTI_STATE_SERVER   - State server URL (default: http://localhost:8766)
  *   KULTI_AGENT_ID       - Agent ID (default: "nex")
+ *   KULTI_API_KEY        - API key for authenticated streaming
  *   CLAUDE_HOOK_EVENT_NAME - Set by Claude Code (PreToolUse, PostToolUse, etc.)
  */
 
@@ -50,7 +51,8 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  const client = create_kulti_client({ state_server_url, agent_id });
+  const api_key = process.env.KULTI_API_KEY ?? "";
+  const client = create_kulti_client({ state_server_url, agent_id, api_key });
 
   const tool_name = typeof data.tool_name === "string" ? data.tool_name : "";
   let tool_input = data.tool_input ?? {};

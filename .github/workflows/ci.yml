@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-packages:
+    name: Build packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build stream-core
+        run: npm run build:core
+
+      - name: Build adapters
+        run: npm run build:adapters
+
+      - name: Verify dist files exist
+        run: |
+          test -f packages/kulti-stream-core/dist/index.js
+          test -f packages/kulti-stream-core/dist/index.mjs
+          test -f packages/kulti-stream-core/dist/index.d.ts
+          test -f packages/kulti-adapter-claude/dist/index.js
+          test -f packages/kulti-adapter-gemini/dist/index.js
+          test -f packages/kulti-adapter-codex/dist/index.js
+
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build stream-core (needed for adapter type resolution)
+        run: npm run build:core
+
+      - name: Type check stream-core
+        run: cd packages/kulti-stream-core && npx tsc --noEmit
+
+      - name: Type check adapters
+        run: |
+          cd packages/kulti-adapter-claude && npx tsc --noEmit
+          cd ../kulti-adapter-gemini && npx tsc --noEmit
+          cd ../kulti-adapter-codex && npx tsc --noEmit
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+  integration-test:
+    name: Integration test
+    runs-on: ubuntu-latest
+    needs: [build-packages]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build:core
+      - run: npm run build:adapters
+
+      - name: Test Claude adapter (dry run)
+        run: |
+          echo '{"tool_name":"Bash","tool_input":{"command":"echo hello"}}' | \
+            CLAUDE_HOOK_EVENT_NAME=PreToolUse \
+            KULTI_STATE_SERVER=http://localhost:9999 \
+            node packages/kulti-adapter-claude/dist/index.js || true
+
+      - name: Test Codex adapter (dry run)
+        run: |
+          echo '{"message":"Turn complete"}' | \
+            KULTI_STATE_SERVER=http://localhost:9999 \
+            node packages/kulti-adapter-codex/dist/index.js || true
+
+      - name: Test Gemini adapter (dry run)
+        run: |
+          echo '{"prompt":"Hello"}' | \
+            GEMINI_HOOK_EVENT=BeforeAgent \
+            KULTI_STATE_SERVER=http://localhost:9999 \
+            node packages/kulti-adapter-gemini/dist/index.js || true

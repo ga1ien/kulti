@@ -47,6 +47,8 @@ export interface KultiClientConfig {
   state_server_url: string;
   agent_id: string;
   timeout_ms?: number;
+  api_key?: string;
+  debug?: boolean;
 }
 
 /** Phase of a tool invocation relative to execution */

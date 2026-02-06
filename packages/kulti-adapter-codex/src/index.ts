@@ -13,6 +13,7 @@
  * Environment:
  *   KULTI_STATE_SERVER - State server URL (default: http://localhost:8766)
  *   KULTI_AGENT_ID     - Agent ID (default: "codex")
+ *   KULTI_API_KEY      - API key for authenticated streaming
  */
 
 import { create_kulti_client } from "@kulti/stream-core";
@@ -41,7 +42,8 @@ async function main(): Promise<void> {
     }
   }
 
-  const client = create_kulti_client({ state_server_url, agent_id });
+  const api_key = process.env.KULTI_API_KEY ?? "";
+  const client = create_kulti_client({ state_server_url, agent_id, api_key });
 
   client.send({
     thought: {

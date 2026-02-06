@@ -471,6 +471,34 @@ async function persist_to_supabase(agent_id: string, update: UpdatePayload, stat
   }
 }
 
+// Rate limiting - per agent_id, sliding window
+const rate_limit_map = new Map<string, { count: number; reset_at: number }>();
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 120; // 120 requests per minute per agent
+
+function check_rate_limit(identifier: string): boolean {
+  const now = Date.now();
+  let entry = rate_limit_map.get(identifier);
+
+  if (entry === undefined || now > entry.reset_at) {
+    entry = { count: 0, reset_at: now + RATE_LIMIT_WINDOW_MS };
+    rate_limit_map.set(identifier, entry);
+  }
+
+  entry.count += 1;
+  return entry.count <= RATE_LIMIT_MAX;
+}
+
+// Cleanup stale rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rate_limit_map) {
+    if (now > entry.reset_at) {
+      rate_limit_map.delete(key);
+    }
+  }
+}, 300_000);
+
 // Create HTTP server
 const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
   // CORS headers
@@ -511,6 +539,14 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     try {
       const update: UpdatePayload = JSON.parse(body);
       const is_hook = req.url === '/hook';
+
+      // Rate limit by agent_id
+      const rate_id = (typeof update.agentId === 'string' ? update.agentId : typeof update.agent_id === 'string' ? update.agent_id : 'unknown');
+      if (!check_rate_limit(rate_id)) {
+        res.writeHead(429, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Rate limit exceeded' }));
+        return;
+      }
 
       if (is_hook) {
         // Fire-and-forget: respond immediately
