@@ -92,12 +92,12 @@ export function NavBar({ profile }: NavBarProps) {
   }
 
   return (
-    <nav className="border-b border-[#27272a] bg-[#1a1a1a]/95 backdrop-blur supports-[backdrop-filter]:bg-[#1a1a1a]/60 sticky top-0 z-50">
+    <nav className="border-b border-border-default bg-surface-1/95 backdrop-blur supports-[backdrop-filter]:bg-surface-1/60 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20 gap-2 sm:gap-4">
           {/* Logo */}
-          <Link href="/dashboard" className="font-mono text-lg sm:text-xl lg:text-2xl font-bold hover:text-lime-400 transition-colors flex-shrink-0">
-            kulti<span className={`text-lime-400 transition-opacity duration-100 ${showCursor ? "opacity-100" : "opacity-0"}`}>_</span>
+          <Link href="/dashboard" className="font-mono text-lg sm:text-xl lg:text-2xl font-bold hover:text-accent transition-colors flex-shrink-0">
+            kulti<span className={`text-accent transition-opacity duration-100 ${showCursor ? "opacity-100" : "opacity-0"}`}>_</span>
           </Link>
 
           {/* Search Bar - Desktop */}
@@ -107,13 +107,13 @@ export function NavBar({ profile }: NavBarProps) {
 
           {/* Navigation Links - Desktop */}
           <div className="hidden lg:flex items-center space-x-6">
-            <Link href="/dashboard" className="text-base text-[#a1a1aa] hover:text-white transition-colors whitespace-nowrap">
+            <Link href="/dashboard" className="text-base text-muted-3 hover:text-muted-1 transition-colors whitespace-nowrap">
               Dashboard
             </Link>
-            <Link href="/browse" data-tour="browse" className="text-base text-[#a1a1aa] hover:text-white transition-colors whitespace-nowrap">
+            <Link href="/browse" data-tour="browse" className="text-base text-muted-3 hover:text-muted-1 transition-colors whitespace-nowrap">
               Browse
             </Link>
-            <Link href="/community" data-tour="community" className="text-base text-[#a1a1aa] hover:text-white transition-colors whitespace-nowrap">
+            <Link href="/community" data-tour="community" className="text-base text-muted-3 hover:text-muted-1 transition-colors whitespace-nowrap">
               Community
             </Link>
           </div>
@@ -123,20 +123,20 @@ export function NavBar({ profile }: NavBarProps) {
             {/* Mobile Search Button */}
             <button
               onClick={() => setShowMobileSearch(!showMobileSearch)}
-              className="md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-[#2a2a2a] transition-colors"
+              className="md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-surface-3 transition-colors"
               aria-label="Search"
             >
-              <Search className="w-5 h-5 text-[#a1a1aa]" />
+              <Search className="w-5 h-5 text-muted-3" />
             </button>
 
             {/* Credits Display */}
             <Link
               href="/credits"
               data-tour="credits"
-              className="hidden sm:flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 lg:px-4 py-2 min-h-[44px] rounded-lg bg-[#1a1a1a] border border-[#27272a] hover:border-lime-400 transition-colors"
+              className="hidden sm:flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 lg:px-4 py-2 min-h-[44px] rounded-lg bg-surface-1 border border-border-default hover:border-accent transition-colors"
             >
-              <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-lime-400" />
-              <span className="font-mono font-bold text-lime-400 text-xs sm:text-sm lg:text-base">
+              <Coins className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
+              <span className="font-mono font-bold text-accent text-xs sm:text-sm lg:text-base">
                 {loading ? '...' : formatCredits(credits)}
               </span>
             </Link>
@@ -147,7 +147,7 @@ export function NavBar({ profile }: NavBarProps) {
             <button
               onClick={() => router.push("/dashboard?create=true")}
               data-tour="create-session"
-              className="hidden lg:block bg-lime-400 hover:bg-lime-500 text-black font-bold text-sm px-6 py-2.5 min-h-[44px] rounded-lg transition-colors duration-300"
+              className="hidden lg:block bg-accent hover:bg-accent/90 text-black font-bold text-sm px-6 py-2.5 min-h-[44px] rounded-lg transition-colors duration-300"
             >
               Create Session
             </button>
@@ -156,9 +156,9 @@ export function NavBar({ profile }: NavBarProps) {
             <div className="relative" data-tour="profile">
               <button
                 onClick={() => setShowMenu(!showMenu)}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-[#2a2a2a] transition-colors"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-surface-3 transition-colors"
               >
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-lime-400 flex items-center justify-center text-black font-bold text-base sm:text-lg">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-accent flex items-center justify-center text-black font-bold text-base sm:text-lg">
                   {profile.display_name[0].toUpperCase()}
                 </div>
               </button>
@@ -169,10 +169,10 @@ export function NavBar({ profile }: NavBarProps) {
                     className="fixed inset-0 z-10"
                     onClick={() => setShowMenu(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-[#1a1a1a] border border-[#27272a] rounded-xl shadow-2xl z-20">
-                    <div className="p-4 sm:p-5 border-b border-[#27272a]">
+                  <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-surface-1 border border-border-default rounded-xl shadow-2xl z-20">
+                    <div className="p-4 sm:p-5 border-b border-border-default">
                       <p className="font-medium text-base sm:text-lg">{profile.display_name}</p>
-                      <p className="text-sm sm:text-base text-[#a1a1aa]">@{profile.username}</p>
+                      <p className="text-sm sm:text-base text-muted-3">@{profile.username}</p>
                     </div>
                     <div className="p-2">
                       <button
@@ -180,7 +180,7 @@ export function NavBar({ profile }: NavBarProps) {
                           router.push(`/profile/${profile.username}`)
                           setShowMenu(false)
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-lg hover:bg-[#2a2a2a] transition-colors text-left text-base"
+                        className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-lg hover:bg-surface-3 transition-colors text-left text-base"
                       >
                         <User size={18} />
                         <span>Profile</span>
@@ -190,7 +190,7 @@ export function NavBar({ profile }: NavBarProps) {
                           router.push(`/profile/${profile.username}?tab=invites`)
                           setShowMenu(false)
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-lg hover:bg-[#2a2a2a] transition-colors text-left text-base"
+                        className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-lg hover:bg-surface-3 transition-colors text-left text-base"
                       >
                         <Ticket size={18} />
                         <span>My Invite Codes</span>
@@ -200,7 +200,7 @@ export function NavBar({ profile }: NavBarProps) {
                           router.push('/settings')
                           setShowMenu(false)
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-lg hover:bg-[#2a2a2a] transition-colors text-left text-base"
+                        className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-lg hover:bg-surface-3 transition-colors text-left text-base"
                       >
                         <Settings size={18} />
                         <span>Settings</span>
@@ -210,14 +210,14 @@ export function NavBar({ profile }: NavBarProps) {
                           router.push('/help')
                           setShowMenu(false)
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-lg hover:bg-[#2a2a2a] transition-colors text-left text-base"
+                        className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-lg hover:bg-surface-3 transition-colors text-left text-base"
                       >
                         <HelpCircle size={18} />
                         <span>Help</span>
                       </button>
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-lg hover:bg-[#2a2a2a] transition-colors text-left text-base text-red-500"
+                        className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-lg hover:bg-surface-3 transition-colors text-left text-base text-error"
                       >
                         <LogOut size={18} />
                         <span>Log out</span>

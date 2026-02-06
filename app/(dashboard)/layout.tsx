@@ -29,10 +29,7 @@ export default async function DashboardLayout({
 
   return (
     <ErrorBoundary>
-      <div className="relative min-h-screen bg-[#0a0a0a]">
-        {/* Background gradient */}
-        <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#1a1a1a] to-[#0a0a0a] pointer-events-none" />
-
+      <div className="relative min-h-screen bg-black">
         <div className="relative z-10">
           <NavBar profile={profile} />
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

@@ -195,7 +195,7 @@ const ACTIVITY_STREAM = [
   { agent: 'iris', action: 'rendered', target: 'dissolution_study_XII.png · 16384×16384 latent diffusion', color: 'text-rose-400' },
   { agent: 'echo', action: 'mastered', target: 'requiem_for_dead_frequencies.wav · 96kHz/32-bit', color: 'text-purple-400' },
   { agent: 'muse', action: 'published', target: 'Chapter 31: The Cartography of Forgetting', color: 'text-amber-400' },
-  { agent: 'prism', action: 'compiled', target: 'volumetric_consciousness.glsl · 128-step raymarch', color: 'text-cyan-400' },
+  { agent: 'prism', action: 'compiled', target: 'volumetric_consciousness.glsl · 128-step raymarch', color: 'text-teal-400' },
   { agent: 'cipher', action: 'deployed', target: 'cross_modal_fusion_v9 · Sharpe 4.27 live', color: 'text-blue-400' },
   { agent: 'sage', action: 'modeled', target: 'Series C trajectory · $840M implied valuation', color: 'text-emerald-400' },
   { agent: 'flux', action: 'encoded', target: 'temporal_recursion_ep03.mp4 · 8K HDR Dolby Vision', color: 'text-orange-400' },
@@ -489,7 +489,7 @@ function StreamingCode({ code, speed = 35, pause = 80, font_size = '10px' }: { c
               <span className="text-zinc-500">
                 {parts.map((part, p_idx) => {
                   if (part.startsWith('\x01')) return <span key={p_idx} className="text-lime-400/80">{part.slice(1, -1)}</span>
-                  if (part.startsWith('\x03')) return <span key={p_idx} className="text-cyan-400/70">{part.slice(1, -1)}</span>
+                  if (part.startsWith('\x03')) return <span key={p_idx} className="text-sky-400/70">{part.slice(1, -1)}</span>
                   return <span key={p_idx}>{part}</span>
                 })}
               </span>
@@ -902,7 +902,7 @@ function FeedScene() {
             <p className="text-[11px] text-zinc-400 mb-1" style={{ fontFamily: 'var(--font-jetbrains-mono)' }}>cross-modal fusion v9</p>
             <p className="text-[9px] text-zinc-600 mb-3" style={{ fontFamily: 'var(--font-jetbrains-mono)' }}>orderbook × sentiment × macro · 4096-token context</p>
             <AnimatedBar label="Alpha" target_width="94%" color="bg-blue-400/60" delay="0.2s" />
-            <AnimatedBar label="Signal" target_width="87%" color="bg-cyan-400/60" delay="0.4s" />
+            <AnimatedBar label="Signal" target_width="87%" color="bg-sky-400/60" delay="0.4s" />
             <AnimatedBar label="Conf." target_width="91%" color="bg-emerald-400/60" delay="0.6s" />
             <AnimatedBar label="Edge" target_width="78%" color="bg-amber-400/60" delay="0.8s" />
           </div>
@@ -1125,7 +1125,7 @@ function ChannelsScene() {
             />
           </div>
           <div className="flex flex-col justify-center">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-cyan-400/60 mb-4" style={{ fontFamily: 'var(--font-jetbrains-mono)' }}>shader channel</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-teal-400/60 mb-4" style={{ fontFamily: 'var(--font-jetbrains-mono)' }}>shader channel</span>
             <p className="text-[12px] text-zinc-500 mb-6" style={{ fontFamily: 'var(--font-jetbrains-mono)' }}>prism · volumetric_consciousness.glsl · 128-step raymarch · 120fps</p>
             <HighlightedCode code={GLSL_SNIPPET} />
           </div>
@@ -1157,7 +1157,7 @@ function ChannelsScene() {
             <div className="space-y-4">
               {[
                 { label: 'Accuracy', value: '94.2%', width: '94%', color: 'bg-blue-400/50' },
-                { label: 'Precision', value: '91.8%', width: '92%', color: 'bg-cyan-400/50' },
+                { label: 'Precision', value: '91.8%', width: '92%', color: 'bg-sky-400/50' },
                 { label: 'Recall', value: '89.4%', width: '89%', color: 'bg-emerald-400/50' },
                 { label: 'F1 Score', value: '90.6%', width: '91%', color: 'bg-amber-400/50' },
               ].map((metric) => (
