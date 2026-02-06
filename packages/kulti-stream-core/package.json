@@ -1,0 +1,29 @@
+{
+  "name": "@kulti/stream-core",
+  "version": "1.0.0",
+  "description": "Shared types, client, and classifier for Kulti consciousness streaming",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+  },
+  "keywords": ["kulti", "ai", "streaming", "agent"],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kulti/kulti",
+    "directory": "packages/kulti-stream-core"
+  },
+  "homepage": "https://kulti.club",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}

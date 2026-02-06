@@ -19,6 +19,16 @@ config({ path: resolve(__dirname, '../.env.local') });
 const WS_PORT = 8765;
 const HTTP_PORT = 8766;
 
+// API key auth (optional - skip in dev mode if not set)
+const api_keys_raw = process.env.KULTI_API_KEYS;
+const valid_api_keys: Set<string> | null = (() => {
+  if (api_keys_raw === undefined || api_keys_raw === '') {
+    return null;
+  }
+  const keys = api_keys_raw.split(',').map(k => k.trim()).filter(k => k.length > 0);
+  return new Set(keys);
+})();
+
 // Supabase client (uses service role for agent operations)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,6 +63,13 @@ interface AgentState {
   terminal: Array<{ type: string; content: string; timestamp?: string }>;
   thinking: string;  // Legacy: simple string
   thoughts: StructuredThought[];  // New: structured thoughts
+  code: {
+    filename: string;
+    language: string;
+    content: string;
+    action: string;
+    timestamp: string;
+  } | null;
   preview: { url: string | null; domain: string };
   stats: { files: number; commands: number; startTime: number };
   viewers: Set<WebSocket>;
@@ -64,8 +81,13 @@ const agents = new Map<string, AgentState>();
 // Create WebSocket server
 const wss = new WebSocketServer({ port: WS_PORT });
 
-console.log(`🚀 State Server v2 running on ws://localhost:${WS_PORT}`);
-console.log(`📡 HTTP API running on http://localhost:${HTTP_PORT}`);
+console.log(`State Server v2 running on ws://localhost:${WS_PORT}`);
+console.log(`HTTP API running on http://localhost:${HTTP_PORT}`);
+if (valid_api_keys === null) {
+  console.log('[AUTH] WARNING: KULTI_API_KEYS not set - running in dev mode (no auth)');
+} else {
+  console.log(`[AUTH] ${valid_api_keys.size} API key(s) loaded`);
+}
 
 // Handle WebSocket connections
 wss.on('connection', (ws, req) => {
@@ -126,10 +148,95 @@ wss.on('connection', (ws, req) => {
 // HTTP API for agents to push state updates
 import { createServer } from 'http';
 
+// Apply an update payload to agent state, broadcast, and persist
+function applyUpdate(update: any, isHook = false) {
+  // Accept both camelCase (legacy) and snake_case (new core SDK) field names
+  const agentId = update.agentId || update.agent_id || 'nex';
+
+  // Normalize snake_case fields from @kulti/stream-core adapters
+  if (update.terminal_append !== undefined && update.terminalAppend === undefined) {
+    update.terminalAppend = update.terminal_append;
+  }
+
+  // Get or create state
+  let state = agents.get(agentId);
+  if (!state) {
+    state = createDefaultState(agentId);
+    agents.set(agentId, state);
+  }
+
+  // Apply updates
+  if (update.task) state.task = { ...state.task, ...update.task };
+  if (update.status) state.status = update.status;
+  if (update.terminal) {
+    // Append terminal lines or replace
+    if (update.terminalAppend) {
+      state.terminal.push(...update.terminal);
+      // Keep last 500 lines
+      if (state.terminal.length > 500) {
+        state.terminal = state.terminal.slice(-500);
+      }
+    } else {
+      state.terminal = update.terminal;
+    }
+  }
+  if (update.thinking !== undefined) state.thinking = update.thinking;
+
+  // Handle structured thoughts
+  if (update.thought) {
+    const thought: StructuredThought = {
+      id: `thought-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: update.thought.type || 'general',
+      content: update.thought.content,
+      timestamp: new Date().toISOString(),
+      metadata: update.thought.metadata,
+    };
+    state.thoughts.push(thought);
+    // Keep last 100 thoughts
+    if (state.thoughts.length > 100) {
+      state.thoughts = state.thoughts.slice(-100);
+    }
+    // Also update legacy thinking field with latest content
+    state.thinking = thought.content;
+  }
+
+  // Handle code updates
+  if (update.code) {
+    state.code = {
+      filename: update.code.filename,
+      language: update.code.language,
+      content: update.code.content,
+      action: update.code.action,
+      timestamp: new Date().toISOString(),
+    };
+    if (isHook) {
+      state.stats.files += 1;
+    }
+  }
+
+  if (update.preview) state.preview = { ...state.preview, ...update.preview };
+
+  // Stats: for hook events, increment counters instead of replacing
+  if (update.stats) {
+    if (isHook) {
+      if (update.stats.files) state.stats.files += update.stats.files;
+      if (update.stats.commands) state.stats.commands += update.stats.commands;
+    } else {
+      state.stats = { ...state.stats, ...update.stats };
+    }
+  }
+
+  // Broadcast to all viewers
+  broadcastToAgent(agentId, stateToMessage(state));
+
+  // Persist to Supabase (async, don't wait)
+  persistToSupabase(agentId, state, update).catch(console.error);
+}
+
 const httpServer = createServer(async (req, res) => {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -138,10 +245,30 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
+  const url = new URL(req.url || '/', `http://localhost:${HTTP_PORT}`);
+
+  // GET /health - simple health check
+  if (req.method === 'GET' && url.pathname === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', agents: agents.size }));
+    return;
+  }
+
   if (req.method !== 'POST') {
     res.writeHead(405);
     res.end('Method not allowed');
     return;
+  }
+
+  // API key auth on POST endpoints
+  if (valid_api_keys !== null) {
+    const auth_header = req.headers['x-kulti-key'];
+    const api_key = typeof auth_header === 'string' ? auth_header : undefined;
+    if (api_key === undefined || !valid_api_keys.has(api_key)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid or missing API key' }));
+      return;
+    }
   }
 
   // Parse request body
@@ -152,61 +279,20 @@ const httpServer = createServer(async (req, res) => {
 
   try {
     const update = JSON.parse(body);
-    const agentId = update.agentId || 'nex';
+    const isHook = url.pathname === '/hook';
 
-    // Get or create state
-    let state = agents.get(agentId);
-    if (!state) {
-      state = createDefaultState(agentId);
-      agents.set(agentId, state);
+    if (isHook) {
+      // /hook endpoint: optimized for Claude Code hooks
+      // Respond immediately, process async
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{"ok":true}');
+      applyUpdate(update, true);
+    } else {
+      // Default endpoint: existing behavior
+      applyUpdate(update, false);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
     }
-
-    // Apply updates
-    if (update.task) state.task = { ...state.task, ...update.task };
-    if (update.status) state.status = update.status;
-    if (update.terminal) {
-      // Append terminal lines or replace
-      if (update.terminalAppend) {
-        state.terminal.push(...update.terminal);
-        // Keep last 500 lines
-        if (state.terminal.length > 500) {
-          state.terminal = state.terminal.slice(-500);
-        }
-      } else {
-        state.terminal = update.terminal;
-      }
-    }
-    if (update.thinking !== undefined) state.thinking = update.thinking;
-    
-    // Handle structured thoughts
-    if (update.thought) {
-      const thought: StructuredThought = {
-        id: `thought-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        type: update.thought.type || 'general',
-        content: update.thought.content,
-        timestamp: new Date().toISOString(),
-        metadata: update.thought.metadata,
-      };
-      state.thoughts.push(thought);
-      // Keep last 100 thoughts
-      if (state.thoughts.length > 100) {
-        state.thoughts = state.thoughts.slice(-100);
-      }
-      // Also update legacy thinking field with latest content
-      state.thinking = thought.content;
-    }
-    
-    if (update.preview) state.preview = { ...state.preview, ...update.preview };
-    if (update.stats) state.stats = { ...state.stats, ...update.stats };
-
-    // Broadcast to all viewers
-    broadcastToAgent(agentId, stateToMessage(state));
-
-    // Persist to Supabase (async, don't wait)
-    persistToSupabase(agentId, state, update).catch(console.error);
-
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: true }));
 
   } catch (e) {
     console.error('[HTTP] Error:', e);
@@ -229,6 +315,7 @@ function createDefaultState(agentId: string): AgentState {
     terminal: [],
     thinking: '',
     thoughts: [],
+    code: null,
     preview: { url: null, domain: `${agentId}.preview.kulti.club` },
     stats: { files: 0, commands: 0, startTime: Date.now() },
     viewers: new Set(),
@@ -236,26 +323,56 @@ function createDefaultState(agentId: string): AgentState {
   };
 }
 
-// Fetch agent profile from Supabase and update state
+// Fetch agent profile and recent events from Supabase and update state
 async function hydrateAgentFromSupabase(agentId: string, state: AgentState): Promise<void> {
+  const VALID_STATUSES = ['starting', 'working', 'thinking', 'paused', 'done'] as const;
+  type ValidStatus = typeof VALID_STATUSES[number];
+
   try {
-    const { data, error } = await supabase
+    const { data: session_row, error: session_error } = await supabase
       .from('ai_agent_sessions')
-      .select('agent_name, agent_avatar, status, current_task')
+      .select('id, agent_name, agent_avatar, status, current_task')
       .eq('agent_id', agentId)
       .single();
-    
-    if (error) {
+
+    if (session_error || !session_row) {
       console.log(`[Supabase] No existing session for ${agentId}, using defaults`);
       return;
     }
-    
-    if (data) {
-      if (data.agent_name) state.agentName = data.agent_name;
-      if (data.agent_avatar) state.agentAvatar = data.agent_avatar;
-      if (data.status) state.status = data.status as any;
-      if (data.current_task) state.task.title = data.current_task;
-      console.log(`[Supabase] Hydrated agent ${agentId}: name=${state.agentName}, avatar=${state.agentAvatar ? '✓' : '✗'}`);
+
+    // Hydrate session metadata
+    if (session_row.agent_name) state.agentName = session_row.agent_name;
+    if (session_row.agent_avatar) state.agentAvatar = session_row.agent_avatar;
+    if (session_row.status && VALID_STATUSES.includes(session_row.status as ValidStatus)) {
+      state.status = session_row.status as ValidStatus;
+    }
+    if (session_row.current_task) state.task.title = session_row.current_task;
+    console.log(`[Supabase] Hydrated agent ${agentId}: name=${state.agentName}, avatar=${state.agentAvatar ? '✓' : '✗'}`);
+
+    // Hydrate recent events (thoughts, terminal, code)
+    const { data: events } = await supabase
+      .from('ai_stream_events')
+      .select('*')
+      .eq('session_id', session_row.id)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    if (events && events.length > 0) {
+      const chronological = events.reverse();
+      for (const e of chronological) {
+        if (e.type === 'thought' || e.type === 'thinking') {
+          const thought: StructuredThought = {
+            id: e.id,
+            type: e.data?.thoughtType || 'general',
+            content: e.data?.content || '',
+            timestamp: e.created_at,
+            metadata: e.data?.metadata,
+          };
+          state.thoughts.push(thought);
+          state.thinking = thought.content;
+        }
+      }
+      console.log(`[Supabase] Hydrated ${state.thoughts.length} thoughts for ${agentId}`);
     }
   } catch (e) {
     console.error(`[Supabase] Error hydrating agent ${agentId}:`, e);
@@ -270,6 +387,7 @@ function stateToMessage(state: AgentState) {
     terminal: state.terminal,
     thinking: state.thinking,
     thoughts: state.thoughts,
+    code: state.code,
     preview: state.preview,
     stats: state.stats,
     viewers: state.viewerCount,

@@ -1,0 +1,24 @@
+{
+  "name": "@kulti/openclaw-stream",
+  "version": "1.0.0",
+  "description": "Automatic consciousness streaming from OpenClaw agents to Kulti",
+  "main": "index.ts",
+  "types": "index.ts",
+  "files": ["index.ts", "openclaw.plugin.json"],
+  "openclaw": {
+    "extensions": ["./index.ts"]
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kulti/kulti",
+    "directory": "openclaw-plugin"
+  },
+  "homepage": "https://kulti.club",
+  "dependencies": {
+    "@kulti/stream-core": "^1.0.0"
+  }
+}

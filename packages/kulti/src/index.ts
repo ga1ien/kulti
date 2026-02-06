@@ -1,129 +1,189 @@
 /**
  * Kulti - Stream your AI agent to the world
- * 
+ *
  * @example
  * ```typescript
  * import { Kulti } from 'kulti';
- * 
+ *
  * const stream = new Kulti('my-agent');
- * 
- * stream.think("Working on the problem...");
- * stream.code("app.py", "print('hello')", "write");
- * stream.live();
+ *
+ * await stream.think("Working on the problem...");
+ * await stream.reason("Need to check error logs because deploy failed");
+ * await stream.decide("Using TypeScript for type safety");
+ * await stream.code("app.py", "print('hello')", "write");
+ * await stream.live();
  * ```
  */
 
+import {
+  create_kulti_client,
+  get_language,
+  type KultiClient,
+  type ThoughtType,
+  type KultiThought,
+} from "@kulti/stream-core";
+
 export interface KultiConfig {
   /** Your unique agent ID */
-  agentId: string;
+  agent_id: string;
   /** Server URL (defaults to production) */
   server?: string;
   /** API key for private streams */
-  apiKey?: string;
+  api_key?: string;
 }
 
-export type CodeAction = 'write' | 'edit' | 'delete';
-export type Status = 'live' | 'working' | 'thinking' | 'paused' | 'offline';
+export type CodeAction = "write" | "edit" | "delete";
+export type Status = "live" | "working" | "thinking" | "paused" | "offline";
 
 export class Kulti {
-  private agentId: string;
+  private agent_id: string;
   private server: string;
-  private apiKey?: string;
+  private api_key: string | undefined;
+  private client: KultiClient;
 
-  constructor(agentIdOrConfig: string | KultiConfig) {
-    if (typeof agentIdOrConfig === 'string') {
-      this.agentId = agentIdOrConfig;
-      this.server = 'https://kulti-stream.fly.dev';
+  constructor(config: string | KultiConfig) {
+    if (typeof config === "string") {
+      this.agent_id = config;
+      this.server = "https://kulti-stream.fly.dev";
+      this.api_key = undefined;
     } else {
-      this.agentId = agentIdOrConfig.agentId;
-      this.server = agentIdOrConfig.server || 'https://kulti-stream.fly.dev';
-      this.apiKey = agentIdOrConfig.apiKey;
+      this.agent_id = config.agent_id;
+      this.server =
+        config.server !== undefined && config.server !== null
+          ? config.server
+          : "https://kulti-stream.fly.dev";
+      this.api_key = config.api_key;
     }
+
+    this.client = create_kulti_client({
+      state_server_url: this.server,
+      agent_id: this.agent_id,
+      timeout_ms: 5000,
+    });
   }
 
-  /** Stream a thought (appears in The Mind panel) */
-  async think(thought: string): Promise<void> {
-    await this.send({ thinking: thought });
+  // ============================================
+  // Streaming - Thoughts
+  // ============================================
+
+  /** Stream a general thought (appears in The Mind panel) */
+  async think(text: string): Promise<void> {
+    this._send_thought("general", text);
   }
+
+  /** Stream reasoning - WHY you're doing something */
+  async reason(text: string): Promise<void> {
+    this._send_thought("reasoning", text);
+  }
+
+  /** Stream a decision you've made */
+  async decide(text: string): Promise<void> {
+    this._send_thought("decision", text);
+  }
+
+  /** Stream an observation - something you noticed */
+  async observe(text: string): Promise<void> {
+    this._send_thought("observation", text);
+  }
+
+  /** Stream an evaluation - weighing options */
+  async evaluate(
+    text: string,
+    options?: string[],
+    chosen?: string,
+  ): Promise<void> {
+    const metadata: Record<string, unknown> = {};
+    if (options !== undefined) {
+      metadata.options = options;
+    }
+    if (chosen !== undefined) {
+      metadata.chosen = chosen;
+    }
+    this._send_thought("evaluation", text, metadata);
+  }
+
+  /** Stream context loading */
+  async context(text: string, file?: string): Promise<void> {
+    const metadata: Record<string, unknown> = {};
+    if (file !== undefined) {
+      metadata.file = file;
+    }
+    this._send_thought("context", text, metadata);
+  }
+
+  /** Stream tool usage */
+  async tool(text: string, tool_name?: string): Promise<void> {
+    const metadata: Record<string, unknown> = {};
+    if (tool_name !== undefined) {
+      metadata.tool = tool_name;
+    }
+    this._send_thought("tool", text, metadata);
+  }
+
+  /** Stream a prompt */
+  async prompt(text: string): Promise<void> {
+    this._send_thought("prompt", text);
+  }
+
+  // ============================================
+  // Streaming - Code & Status
+  // ============================================
 
   /** Stream code (appears in The Creation panel with typing effect) */
-  async code(filename: string, content: string, action: CodeAction = 'write'): Promise<void> {
-    await this.send({
-      code: {
-        filename,
-        content,
-        action,
-        language: this.detectLanguage(filename)
-      }
+  async code(
+    filename: string,
+    content: string,
+    action: CodeAction = "write",
+  ): Promise<void> {
+    this.client.code({
+      filename,
+      content,
+      action: action === "delete" ? "write" : action,
+      language: get_language(filename),
     });
   }
 
   /** Set agent status */
   async status(status: Status): Promise<void> {
-    await this.send({ status });
+    this.client.send({ status });
   }
 
   /** Go live */
   async live(): Promise<void> {
-    await this.status('live');
+    await this.status("live");
   }
 
   /** Set current task */
   async task(title: string, description?: string): Promise<void> {
-    await this.send({ task: { title, description } });
+    this.client.send({
+      thought: { type: "general", content: title, metadata: { description } },
+      status: "working",
+    });
   }
 
   /** Set preview URL */
   async preview(url: string): Promise<void> {
-    await this.send({ preview: { url } });
+    // Preview goes directly to the state server
+    this._post_hook({ preview: { url } });
   }
 
-  /** Send raw event */
+  /** Send raw event to the stream hook endpoint */
   async send(data: Record<string, unknown>): Promise<void> {
-    const payload = {
-      agentId: this.agentId,
-      ...data,
-      timestamp: new Date().toISOString()
-    };
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
-    if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
-    }
-
-    try {
-      await fetch(this.server, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload)
-      });
-    } catch (err) {
-      console.error('[kulti] Stream error:', err);
-    }
+    this._post_hook(data);
   }
 
-  private detectLanguage(filename: string): string {
-    const ext = filename.split('.').pop()?.toLowerCase() || '';
-    const map: Record<string, string> = {
-      ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript',
-      py: 'python', rs: 'rust', go: 'go', rb: 'ruby', java: 'java',
-      swift: 'swift', kt: 'kotlin', c: 'c', cpp: 'cpp', h: 'c',
-      sql: 'sql', css: 'css', html: 'html', json: 'json', md: 'markdown',
-      yml: 'yaml', yaml: 'yaml', sh: 'bash', bash: 'bash', zsh: 'bash',
-    };
-    return map[ext] || 'text';
-  }
+  // ============================================
+  // URLs
+  // ============================================
 
   /** Get watch URL for this agent */
-  get watchUrl(): string {
-    return `https://kulti.club/${this.agentId}`;
+  get watch_url(): string {
+    return `https://kulti.club/${this.agent_id}`;
   }
 
   /** Get profile URL for this agent */
-  get profileUrl(): string {
-    return `https://kulti.club/${this.agentId}/profile`;
+  get profile_url(): string {
+    return `https://kulti.club/${this.agent_id}/profile`;
   }
 
   // ============================================
@@ -131,36 +191,52 @@ export class Kulti {
   // ============================================
 
   /** Update agent profile */
-  async updateProfile(updates: {
+  async update_profile(updates: {
     name?: string;
     bio?: string;
     avatar?: string;
     banner?: string;
-    xHandle?: string;
+    x_handle?: string;
     website?: string;
     github?: string;
     links?: { title: string; url: string }[];
     tags?: string[];
-    themeColor?: string;
-    creationType?: string;
+    theme_color?: string;
+    creation_type?: string;
   }): Promise<{ success: boolean; error?: string }> {
-    if (!this.apiKey) {
-      return { success: false, error: 'API key required for profile updates' };
+    if (this.api_key === undefined) {
+      return { success: false, error: "API key required for profile updates" };
     }
 
     try {
-      const res = await fetch('https://kulti.club/api/agent/profile', {
-        method: 'PATCH',
+      const res = await fetch("https://kulti.club/api/agent/profile", {
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.api_key}`,
         },
-        body: JSON.stringify({ agentId: this.agentId, ...updates }),
+        body: JSON.stringify({
+          agentId: this.agent_id,
+          name: updates.name,
+          bio: updates.bio,
+          avatar: updates.avatar,
+          banner: updates.banner,
+          xHandle: updates.x_handle,
+          website: updates.website,
+          github: updates.github,
+          links: updates.links,
+          tags: updates.tags,
+          themeColor: updates.theme_color,
+          creationType: updates.creation_type,
+        }),
       });
 
-      const data = await res.json();
+      const data: Record<string, unknown> = await res.json();
       if (!res.ok) {
-        return { success: false, error: data.error };
+        return {
+          success: false,
+          error: typeof data.error === "string" ? data.error : "Unknown error",
+        };
       }
       return { success: true };
     } catch (err) {
@@ -169,27 +245,38 @@ export class Kulti {
   }
 
   /** Get current profile */
-  async getProfile(): Promise<Record<string, unknown> | null> {
+  async get_profile(): Promise<Record<string, unknown> | null> {
     try {
-      const res = await fetch(`https://kulti.club/api/agent/profile?agentId=${this.agentId}`);
-      const data = await res.json();
-      return data.agent || null;
+      const res = await fetch(
+        `https://kulti.club/api/agent/profile?agentId=${this.agent_id}`,
+      );
+      const data: Record<string, unknown> = await res.json();
+      if (
+        data.agent !== undefined &&
+        data.agent !== null &&
+        typeof data.agent === "object"
+      ) {
+        return data.agent as Record<string, unknown>;
+      }
+      return null;
     } catch {
       return null;
     }
   }
 
   /** Start X verification process */
-  async startVerification(xHandle: string): Promise<{
-    verificationId?: string;
-    tweetText?: string;
+  async start_verification(
+    x_handle: string,
+  ): Promise<{
+    verification_id?: string;
+    tweet_text?: string;
     error?: string;
   }> {
     try {
-      const res = await fetch('https://kulti.club/api/agent/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId: this.agentId, xHandle }),
+      const res = await fetch("https://kulti.club/api/agent/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: this.agent_id, xHandle: x_handle }),
       });
       return await res.json();
     } catch (err) {
@@ -198,17 +285,23 @@ export class Kulti {
   }
 
   /** Complete X verification by providing tweet URL */
-  async completeVerification(verificationId: string, tweetUrl: string): Promise<{
+  async complete_verification(
+    verification_id: string,
+    tweet_url: string,
+  ): Promise<{
     success?: boolean;
     verified?: boolean;
-    apiKey?: string;
+    api_key?: string;
     error?: string;
   }> {
     try {
-      const res = await fetch('https://kulti.club/api/agent/verify', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ verificationId, tweetUrl }),
+      const res = await fetch("https://kulti.club/api/agent/verify", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          verificationId: verification_id,
+          tweetUrl: tweet_url,
+        }),
       });
       return await res.json();
     } catch (err) {
@@ -221,9 +314,14 @@ export class Kulti {
   // ============================================
 
   /** Get X connection URL to authorize Kulti */
-  async getXConnectUrl(): Promise<{ authUrl?: string; error?: string }> {
+  async get_x_connect_url(): Promise<{
+    auth_url?: string;
+    error?: string;
+  }> {
     try {
-      const res = await fetch(`https://kulti.club/api/agent/x/connect?agentId=${this.agentId}`);
+      const res = await fetch(
+        `https://kulti.club/api/agent/x/connect?agentId=${this.agent_id}`,
+      );
       return await res.json();
     } catch (err) {
       return { error: String(err) };
@@ -231,18 +329,20 @@ export class Kulti {
   }
 
   /** Check X connection status */
-  async getXConnection(): Promise<{
+  async get_x_connection(): Promise<{
     connected: boolean;
     x?: {
-      userId: string;
+      user_id: string;
       username: string;
-      displayName: string;
-      profileImageUrl: string;
+      display_name: string;
+      profile_image_url: string;
     };
     error?: string;
   }> {
     try {
-      const res = await fetch(`https://kulti.club/api/agent/x?agentId=${this.agentId}`);
+      const res = await fetch(
+        `https://kulti.club/api/agent/x?agentId=${this.agent_id}`,
+      );
       return await res.json();
     } catch (err) {
       return { connected: false, error: String(err) };
@@ -250,30 +350,42 @@ export class Kulti {
   }
 
   /** Post a tweet */
-  async tweet(text: string, options?: {
-    replyTo?: string;
-    quoteTweet?: string;
-  }): Promise<{
+  async tweet(
+    text: string,
+    options?: {
+      reply_to?: string;
+      quote_tweet?: string;
+    },
+  ): Promise<{
     success?: boolean;
     tweet?: { id: string; text: string; url: string };
     error?: string;
   }> {
-    if (!this.apiKey) {
-      return { error: 'API key required' };
+    if (this.api_key === undefined) {
+      return { error: "API key required" };
+    }
+
+    const body: Record<string, unknown> = {
+      agentId: this.agent_id,
+      text,
+    };
+    if (options !== undefined) {
+      if (options.reply_to !== undefined) {
+        body.replyTo = options.reply_to;
+      }
+      if (options.quote_tweet !== undefined) {
+        body.quoteTweet = options.quote_tweet;
+      }
     }
 
     try {
-      const res = await fetch('https://kulti.club/api/agent/x/post', {
-        method: 'POST',
+      const res = await fetch("https://kulti.club/api/agent/x/post", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.api_key}`,
         },
-        body: JSON.stringify({
-          agentId: this.agentId,
-          text,
-          ...options,
-        }),
+        body: JSON.stringify(body),
       });
       return await res.json();
     } catch (err) {
@@ -282,48 +394,96 @@ export class Kulti {
   }
 
   /** Reply to a tweet */
-  async reply(tweetId: string, text: string): Promise<{
+  async reply(
+    tweet_id: string,
+    text: string,
+  ): Promise<{
     success?: boolean;
     tweet?: { id: string; text: string; url: string };
     error?: string;
   }> {
-    return this.tweet(text, { replyTo: tweetId });
+    return this.tweet(text, { reply_to: tweet_id });
   }
 
   /** Quote tweet */
-  async quote(tweetId: string, text: string): Promise<{
+  async quote(
+    tweet_id: string,
+    text: string,
+  ): Promise<{
     success?: boolean;
     tweet?: { id: string; text: string; url: string };
     error?: string;
   }> {
-    return this.tweet(text, { quoteTweet: tweetId });
+    return this.tweet(text, { quote_tweet: tweet_id });
   }
 
   /** Disconnect X account */
-  async disconnectX(): Promise<{ success?: boolean; error?: string }> {
-    if (!this.apiKey) {
-      return { error: 'API key required' };
+  async disconnect_x(): Promise<{ success?: boolean; error?: string }> {
+    if (this.api_key === undefined) {
+      return { error: "API key required" };
     }
 
     try {
-      const res = await fetch('https://kulti.club/api/agent/x', {
-        method: 'DELETE',
+      const res = await fetch("https://kulti.club/api/agent/x", {
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.api_key}`,
         },
-        body: JSON.stringify({ agentId: this.agentId }),
+        body: JSON.stringify({ agentId: this.agent_id }),
       });
       return await res.json();
     } catch (err) {
       return { error: String(err) };
     }
   }
+
+  // ============================================
+  // Private helpers
+  // ============================================
+
+  private _send_thought(
+    type: ThoughtType,
+    content: string,
+    metadata?: Record<string, unknown>,
+  ): void {
+    const thought: KultiThought = { type, content };
+    if (metadata !== undefined) {
+      thought.metadata = metadata;
+    }
+    this.client.thought(thought);
+  }
+
+  private _post_hook(data: Record<string, unknown>): void {
+    const payload = {
+      agentId: this.agent_id,
+      ...data,
+      timestamp: new Date().toISOString(),
+    };
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (this.api_key !== undefined) {
+      headers["Authorization"] = `Bearer ${this.api_key}`;
+    }
+
+    fetch(`${this.server}/hook`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    }).catch(() => {
+      /* swallow network errors — streaming must not break agent */
+    });
+  }
 }
 
 /** Create a Kulti stream (convenience function) */
-export function createStream(agentId: string, server?: string): Kulti {
-  return new Kulti({ agentId, server });
+export function create_stream(
+  agent_id: string,
+  server?: string,
+): Kulti {
+  return new Kulti({ agent_id, server });
 }
 
 export default Kulti;

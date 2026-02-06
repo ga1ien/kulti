@@ -4,9 +4,9 @@
   "description": "**Built with Claude Code | Powered by 100ms | Launching December 2025**",
   "main": "index.js",
   "scripts": {
-    "dev": "next dev -p 4848",
+    "dev": "next dev -p 5555",
     "build": "next build",
-    "start": "next start -p 4848",
+    "start": "next start -p 5555",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:strict": "eslint .",
@@ -36,11 +36,20 @@
     "test:load:all": "npm run test:load && npm run test:load:sessions && npm run test:load:database",
     "db:backup": "./scripts/backup-db.sh",
     "db:restore": "./scripts/restore-db.sh",
-    "db:verify": "./scripts/verify-backup.sh"
+    "db:verify": "./scripts/verify-backup.sh",
+    "build:core": "cd packages/kulti-stream-core && npx tsup src/index.ts --format cjs,esm --dts",
+    "build:adapters": "cd packages/kulti-adapter-claude && npx tsup src/index.ts --format cjs --dts && cd ../kulti-adapter-gemini && npx tsup src/index.ts --format cjs --dts && cd ../kulti-adapter-codex && npx tsup src/index.ts --format cjs --dts",
+    "build:kulti": "cd packages/kulti && npx tsup src/index.ts src/cli.ts --format cjs,esm --dts",
+    "build:packages": "npm run build:core && npm run build:adapters && npm run build:kulti",
+    "build:all": "npm run build:packages && npm run build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "workspaces": [
+    "packages/*",
+    "openclaw-plugin"
+  ],
   "dependencies": {
     "@100mslive/hms-noise-cancellation": "^0.0.2",
     "@100mslive/hms-virtual-background": "^1.13.39",

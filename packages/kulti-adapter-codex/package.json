@@ -1,0 +1,33 @@
+{
+  "name": "@kulti/adapter-codex",
+  "version": "1.0.0",
+  "description": "Codex CLI notify adapter for Kulti consciousness streaming",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "kulti-codex-notify": "./dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs --dts",
+    "dev": "tsup src/index.ts --format cjs --dts --watch"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kulti/kulti",
+    "directory": "packages/kulti-adapter-codex"
+  },
+  "homepage": "https://kulti.club",
+  "dependencies": {
+    "@kulti/stream-core": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}

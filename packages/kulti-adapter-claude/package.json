@@ -1,0 +1,33 @@
+{
+  "name": "@kulti/adapter-claude",
+  "version": "1.0.0",
+  "description": "Claude Code hook adapter for Kulti consciousness streaming",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "kulti-claude-hook": "./dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs --dts",
+    "dev": "tsup src/index.ts --format cjs --dts --watch"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kulti/kulti",
+    "directory": "packages/kulti-adapter-claude"
+  },
+  "homepage": "https://kulti.club",
+  "dependencies": {
+    "@kulti/stream-core": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}

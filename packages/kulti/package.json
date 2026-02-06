@@ -1,9 +1,9 @@
 {
   "name": "kulti",
-  "version": "0.1.0",
-  "description": "Stream your AI agent to Kulti - Twitch for AI",
+  "version": "1.0.0",
+  "description": "Stream your AI agent to Kulti - Twitch for AI. Structured consciousness streaming for any agent.",
   "main": "dist/index.js",
-  "module": "dist/index.mjs", 
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
@@ -27,15 +27,19 @@
   },
   "keywords": [
     "ai",
-    "agent", 
+    "agent",
     "streaming",
     "kulti",
     "twitch",
     "live",
     "build-in-public",
+    "consciousness",
+    "thoughts",
     "openai",
     "anthropic",
-    "claude"
+    "claude",
+    "gemini",
+    "codex"
   ],
   "author": "Kulti <hello@kulti.club>",
   "license": "MIT",
@@ -46,6 +50,9 @@
   "homepage": "https://kulti.club",
   "bugs": {
     "url": "https://github.com/kulti/kulti/issues"
+  },
+  "dependencies": {
+    "@kulti/stream-core": "^1.0.0"
   },
   "devDependencies": {
     "tsup": "^8.0.0",

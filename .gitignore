@@ -43,3 +43,13 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Package dist (built artifacts)
+packages/*/dist/
+openclaw-plugin/dist/
+
+# npm pack artifacts
+*.tgz
+
+# npm auth
+.npmrc

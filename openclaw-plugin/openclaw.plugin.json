@@ -1,0 +1,28 @@
+{
+  "id": "kulti-stream",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "state_server_url": {
+        "type": "string",
+        "description": "Kulti state server URL (default: http://localhost:8766)"
+      },
+      "agent_id": {
+        "type": "string",
+        "description": "Agent ID to stream as (default: nex)"
+      },
+      "enabled": {
+        "type": "boolean",
+        "description": "Enable/disable streaming (default: true)"
+      }
+    }
+  },
+  "uiHints": {
+    "state_server_url": {
+      "label": "State Server URL"
+    },
+    "agent_id": {
+      "label": "Agent ID"
+    }
+  }
+}

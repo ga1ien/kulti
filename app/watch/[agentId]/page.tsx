@@ -30,13 +30,34 @@ interface CodeFile {
   timestamp: string;
 }
 
+type ThoughtType = 'reasoning' | 'prompt' | 'tool' | 'context' | 'evaluation' | 'decision' | 'observation' | 'general';
+
 interface ThinkingBlock {
   id: string;
   content: string;
   displayedContent: string; // For typing effect
   isTyping: boolean;
   timestamp: string;
+  thought_type: ThoughtType;
+  metadata?: {
+    tool?: string;
+    file?: string;
+    command?: string;
+    pattern?: string;
+    url?: string;
+  };
 }
+
+const THOUGHT_COLORS: Record<ThoughtType, { border: string; bg: string; badge: string; text: string; label: string }> = {
+  reasoning: { border: 'border-blue-500/30', bg: 'from-blue-500/10 to-blue-500/5', badge: 'bg-blue-500/20 text-blue-400', text: 'text-blue-300/70', label: 'reasoning' },
+  decision: { border: 'border-emerald-500/30', bg: 'from-emerald-500/10 to-emerald-500/5', badge: 'bg-emerald-500/20 text-emerald-400', text: 'text-emerald-300/70', label: 'decision' },
+  observation: { border: 'border-amber-500/30', bg: 'from-amber-500/10 to-amber-500/5', badge: 'bg-amber-500/20 text-amber-400', text: 'text-amber-300/70', label: 'observation' },
+  evaluation: { border: 'border-purple-500/30', bg: 'from-purple-500/10 to-purple-500/5', badge: 'bg-purple-500/20 text-purple-400', text: 'text-purple-300/70', label: 'evaluation' },
+  tool: { border: 'border-orange-500/30', bg: 'from-orange-500/10 to-orange-500/5', badge: 'bg-orange-500/20 text-orange-400', text: 'text-orange-300/70', label: 'tool' },
+  context: { border: 'border-cyan-500/30', bg: 'from-cyan-500/10 to-cyan-500/5', badge: 'bg-cyan-500/20 text-cyan-400', text: 'text-cyan-300/70', label: 'context' },
+  prompt: { border: 'border-white/30', bg: 'from-white/10 to-white/5', badge: 'bg-white/20 text-white/80', text: 'text-white/70', label: 'prompt' },
+  general: { border: 'border-white/10', bg: 'from-white/5 to-transparent', badge: 'bg-white/10 text-white/50', text: 'text-white/50', label: 'thought' },
+};
 
 // Simple hash for deduplication
 function hashContent(content: string): string {
@@ -68,10 +89,12 @@ export default function WatchPage() {
   const thinkingRef = useRef<HTMLDivElement>(null);
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const thoughtTypingRef = useRef<NodeJS.Timeout | null>(null);
+  const ws_ref = useRef<WebSocket | null>(null);
+  const reconnect_timeout_ref = useRef<NodeJS.Timeout | null>(null);
   const supabase = createClient();
 
   // Typing effect for thoughts
-  const typeThought = useCallback((id: string, fullContent: string) => {
+  const typeThought = useCallback((id: string, fullContent: string, thought_type: ThoughtType = 'general', metadata?: ThinkingBlock['metadata']) => {
     // Add the thought with empty displayed content
     setThinking(prev => {
       const exists = prev.some(t => t.id === id);
@@ -82,7 +105,9 @@ export default function WatchPage() {
         displayedContent: '',
         isTyping: true,
         timestamp: new Date().toISOString(),
-      }].slice(-30);
+        thought_type,
+        metadata,
+      }].slice(-50);
     });
 
     // Type out the thought word by word
@@ -203,49 +228,108 @@ export default function WatchPage() {
         return newMap;
       });
     }
-    if (data.thinking) {
+
+    // Handle structured thoughts array (from state server broadcast)
+    if (data.thoughts && Array.isArray(data.thoughts)) {
+      for (const thought of data.thoughts) {
+        const hash = hashContent(thought.content);
+        setSeenHashes(prev => {
+          if (prev.has(hash)) return prev;
+          const newSet = new Set(prev);
+          newSet.add(hash);
+          typeThought(thought.id, thought.content, thought.type || 'general', thought.metadata);
+          return newSet;
+        });
+      }
+    }
+
+    // Handle legacy thinking string
+    if (data.thinking && typeof data.thinking === 'string') {
       const hash = hashContent(data.thinking);
-      // Check if we've seen this thought before
       setSeenHashes(prev => {
-        if (prev.has(hash)) return prev; // Skip duplicate
-        // Not a duplicate - type it out
+        if (prev.has(hash)) return prev;
         const id = Date.now().toString();
-        typeThought(id, data.thinking);
+        typeThought(id, data.thinking, 'general');
         const newSet = new Set(prev);
         newSet.add(hash);
         return newSet;
       });
     }
+
     if (data.status) setSession(prev => prev ? { ...prev, status: data.status === 'working' ? 'live' : data.status } : prev);
     if (data.task) setSession(prev => prev ? { ...prev, current_task: data.task.title } : prev);
     if (data.preview?.url) setSession(prev => prev ? { ...prev, preview_url: data.preview.url } : prev);
   }, [typeCode, typeThought]);
 
-  // WebSocket connection (local dev or production)
+  // WebSocket connection with exponential backoff reconnection
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
-    // Use local WebSocket for localhost, production for deployed
-    const isLocal = window.location.hostname === 'localhost';
-    const wsUrl = isLocal 
+
+    let disposed = false;
+    let retry_count = 0;
+    let backoff_ms = 1000;
+    const MAX_RETRIES = 5;
+    const MAX_BACKOFF_MS = 30000;
+
+    const is_local = window.location.hostname === 'localhost';
+    const ws_url = is_local
       ? `ws://localhost:8765?agent=${agentId}`
       : `wss://kulti-stream.fly.dev?agent=${agentId}`;
-    
-    console.log('[WS] Connecting to:', wsUrl);
-    const ws = new WebSocket(wsUrl);
-    
-    ws.onopen = () => console.log('[WS] Connected');
-    ws.onmessage = (e) => { 
-      try { 
-        handleStreamUpdate(JSON.parse(e.data)); 
-      } catch (err) {
-        console.error('[WS] Parse error:', err);
+
+    function connect() {
+      if (disposed) return;
+
+      console.log(`[WS] Connecting to: ${ws_url} (attempt ${retry_count + 1})`);
+      const ws = new WebSocket(ws_url);
+      ws_ref.current = ws;
+
+      ws.onopen = () => {
+        console.log('[WS] Connected');
+        retry_count = 0;
+        backoff_ms = 1000;
+      };
+
+      ws.onmessage = (e) => {
+        try {
+          handleStreamUpdate(JSON.parse(e.data));
+        } catch (err) {
+          console.error('[WS] Parse error:', err);
+        }
+      };
+
+      ws.onerror = (e) => console.error('[WS] Error:', e);
+
+      ws.onclose = () => {
+        console.log('[WS] Disconnected');
+        ws_ref.current = null;
+        if (disposed) return;
+
+        if (retry_count < MAX_RETRIES) {
+          retry_count += 1;
+          console.log(`[WS] Reconnecting in ${backoff_ms}ms (retry ${retry_count}/${MAX_RETRIES})`);
+          reconnect_timeout_ref.current = setTimeout(() => {
+            connect();
+          }, backoff_ms);
+          backoff_ms = Math.min(backoff_ms * 2, MAX_BACKOFF_MS);
+        } else {
+          console.log('[WS] Max retries reached, giving up');
+        }
+      };
+    }
+
+    connect();
+
+    return () => {
+      disposed = true;
+      if (reconnect_timeout_ref.current) {
+        clearTimeout(reconnect_timeout_ref.current);
+        reconnect_timeout_ref.current = null;
+      }
+      if (ws_ref.current) {
+        ws_ref.current.close();
+        ws_ref.current = null;
       }
     };
-    ws.onerror = (e) => console.error('[WS] Error:', e);
-    ws.onclose = () => console.log('[WS] Disconnected');
-    
-    return () => ws.close();
   }, [agentId, handleStreamUpdate]);
 
   // Initial fetch
@@ -283,24 +367,27 @@ export default function WatchPage() {
           setActiveFile(Array.from(filesMap.keys())[filesMap.size - 1]);
         }
 
-        // Load thinking with deduplication
-        const thinkingEvents = events.filter(e => e.type === 'thinking');
+        // Load thinking and structured thoughts with deduplication
+        const thought_events = events.filter(e => e.type === 'thinking' || e.type === 'thought');
         const seen = new Set<string>();
-        const dedupedThinking: ThinkingBlock[] = [];
-        for (const e of thinkingEvents.reverse()) {
-          const hash = hashContent(e.data?.content || '');
+        const deduped_thinking: ThinkingBlock[] = [];
+        for (const e of thought_events.reverse()) {
+          const content = e.data?.content || '';
+          const hash = hashContent(content);
           if (!seen.has(hash)) {
             seen.add(hash);
-            dedupedThinking.push({
+            deduped_thinking.push({
               id: e.id,
-              content: e.data?.content || '',
-              displayedContent: e.data?.content || '', // Full content for history
+              content,
+              displayedContent: content, // Full content for history
               isTyping: false,
               timestamp: e.created_at,
+              thought_type: e.data?.thoughtType || 'general',
+              metadata: e.data?.metadata,
             });
           }
         }
-        setThinking(dedupedThinking.slice(-30));
+        setThinking(deduped_thinking.slice(-50));
         setSeenHashes(seen);
       }
     }
@@ -317,18 +404,19 @@ export default function WatchPage() {
         if (e.type === 'code') {
           typeCode(e.data?.filename || 'untitled', e.data?.content || '');
         }
-        if (e.type === 'thinking') {
-          const hash = hashContent(e.data?.content || '');
+        if (e.type === 'thinking' || e.type === 'thought') {
+          const content = e.data?.content || '';
+          const hash = hashContent(content);
+          const thought_type: ThoughtType = e.data?.thoughtType || 'general';
+          const metadata = e.data?.metadata;
           setSeenHashes(prev => {
             if (prev.has(hash)) return prev;
             const newSet = new Set(prev);
             newSet.add(hash);
             return newSet;
           });
-          // Use typeThought for typing effect on realtime updates
-          const content = e.data?.content || '';
           if (!seenHashes.has(hash)) {
-            typeThought(e.id, content);
+            typeThought(e.id, content, thought_type, metadata);
           }
         }
       })
@@ -421,8 +509,8 @@ export default function WatchPage() {
           )}
         </div>
 
-        {/* Thoughts */}
-        <div ref={thinkingRef} className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+        {/* Thoughts - structured with type badges */}
+        <div ref={thinkingRef} className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-hide">
           {thinking.length === 0 ? (
             <div className="text-white/15 text-sm text-center py-12 italic">
               waiting for thoughts...
@@ -430,23 +518,51 @@ export default function WatchPage() {
           ) : (
             thinking.map((block, i) => {
               const isLatest = i === thinking.length - 1;
-              const isRecent = i >= thinking.length - 3;
-              const opacity = isLatest ? 1 : isRecent ? 0.6 : 0.3;
+              const isRecent = i >= thinking.length - 5;
+              const opacity = isLatest ? 1 : isRecent ? 0.7 : 0.35;
+              const colors = THOUGHT_COLORS[block.thought_type] || THOUGHT_COLORS.general;
+              const is_prompt = block.thought_type === 'prompt';
+
               return (
                 <div
                   key={block.id}
                   className={`
-                    p-4 rounded-2xl transition-all duration-700
-                    ${isLatest ? 'bg-gradient-to-br from-cyan-500/10 to-indigo-500/5 border border-cyan-500/20 shadow-lg shadow-cyan-500/5' : 'bg-white/[0.02] border border-white/[0.04]'}
+                    p-3 rounded-xl transition-all duration-500
+                    ${isLatest
+                      ? `bg-gradient-to-br ${colors.bg} border ${colors.border} shadow-lg`
+                      : 'bg-white/[0.02] border border-white/[0.04]'
+                    }
                   `}
                   style={{ opacity }}
                 >
-                  <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">
+                  {/* Type badge + metadata */}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider font-medium ${colors.badge}`}>
+                      {colors.label}
+                    </span>
+                    {block.metadata?.tool && block.thought_type !== 'prompt' && (
+                      <span className="text-[10px] text-white/25 font-mono">
+                        {block.metadata.tool}
+                      </span>
+                    )}
+                    {block.metadata?.file && (
+                      <span className="text-[10px] text-white/30 font-mono truncate max-w-[180px]">
+                        {block.metadata.file.split('/').slice(-2).join('/')}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${is_prompt ? 'text-white/80 font-medium' : 'text-white/60'}`}>
                     {block.displayedContent || block.content}
-                    {(isLatest || block.isTyping) && <span className="inline-block w-1.5 h-4 bg-cyan-400/70 ml-1 animate-pulse" />}
+                    {(isLatest || block.isTyping) && (
+                      <span className="inline-block w-1.5 h-3.5 bg-cyan-400/70 ml-0.5 animate-pulse" />
+                    )}
                   </p>
-                  <div className="mt-2 text-[10px] text-white/20">
-                    {new Date(block.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+
+                  {/* Timestamp */}
+                  <div className="mt-1.5 text-[10px] text-white/15">
+                    {new Date(block.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </div>
                 </div>
               );

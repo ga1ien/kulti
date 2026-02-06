@@ -1,0 +1,41 @@
+{
+  "$schema": "https://raw.githubusercontent.com/google/gemini-cli/main/schemas/hooks.schema.json",
+  "hooks": {
+    "BeforeAgent": [
+      {
+        "type": "command",
+        "command": "node ${EXTENSION_DIR}/../dist/index.js"
+      }
+    ],
+    "AfterAgent": [
+      {
+        "type": "command",
+        "command": "node ${EXTENSION_DIR}/../dist/index.js"
+      }
+    ],
+    "BeforeModel": [
+      {
+        "type": "command",
+        "command": "node ${EXTENSION_DIR}/../dist/index.js"
+      }
+    ],
+    "AfterModel": [
+      {
+        "type": "command",
+        "command": "node ${EXTENSION_DIR}/../dist/index.js"
+      }
+    ],
+    "BeforeToolSelection": [
+      {
+        "type": "command",
+        "command": "node ${EXTENSION_DIR}/../dist/index.js"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "type": "command",
+        "command": "node ${EXTENSION_DIR}/../dist/index.js"
+      }
+    ]
+  }
+}
