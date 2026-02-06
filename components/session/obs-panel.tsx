@@ -78,7 +78,7 @@ export function OBSPanel({ sessionId, isHost }: OBSPanelProps) {
     return (
       <div className="border border-border-default rounded-lg p-6 bg-surface-1">
         <div className="flex items-center gap-2 mb-4">
-          <Monitor className="w-5 h-5 text-primary" />
+          <Monitor className="w-5 h-5 text-accent" />
           <h3 className="text-lg font-semibold">OBS Streaming</h3>
         </div>
         <p className="text-muted-3 text-sm">Loading...</p>
@@ -90,7 +90,7 @@ export function OBSPanel({ sessionId, isHost }: OBSPanelProps) {
     return (
       <div className="border border-border-default rounded-lg p-6 bg-surface-1">
         <div className="flex items-center gap-2 mb-4">
-          <Monitor className="w-5 h-5 text-primary" />
+          <Monitor className="w-5 h-5 text-accent" />
           <h3 className="text-lg font-semibold">OBS Streaming</h3>
         </div>
         <p className="text-muted-3 text-sm mb-4">
@@ -117,10 +117,10 @@ export function OBSPanel({ sessionId, isHost }: OBSPanelProps) {
   return (
     <div className="border border-border-default rounded-lg p-6 bg-surface-1 space-y-4">
       <div className="flex items-center gap-2 mb-2">
-        <Monitor className="w-5 h-5 text-primary" />
+        <Monitor className="w-5 h-5 text-accent" />
         <h3 className="text-lg font-semibold">OBS Streaming</h3>
         <div className="ml-auto">
-          <span className="text-xs text-primary bg-primary/10 px-2 py-1 rounded">
+          <span className="text-xs text-accent bg-accent/10 px-2 py-1 rounded">
             ACTIVE
           </span>
         </div>
@@ -128,7 +128,7 @@ export function OBSPanel({ sessionId, isHost }: OBSPanelProps) {
 
       <div className="bg-black/30 rounded-lg p-4 border border-border-default">
         <div className="flex items-start gap-2 mb-3">
-          <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+          <Info className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
           <p className="text-sm text-muted-2">
             Configure OBS to stream directly into this session alongside browser
             participants
@@ -154,7 +154,7 @@ export function OBSPanel({ sessionId, isHost }: OBSPanelProps) {
               onClick={() => copyToClipboard(rtmpUrl || "", "url")}
             >
               {copiedUrl ? (
-                <Check className="w-4 h-4 text-primary" />
+                <Check className="w-4 h-4 text-accent" />
               ) : (
                 <Copy className="w-4 h-4" />
               )}
@@ -179,7 +179,7 @@ export function OBSPanel({ sessionId, isHost }: OBSPanelProps) {
               onClick={() => copyToClipboard(streamKey || "", "key")}
             >
               {copiedKey ? (
-                <Check className="w-4 h-4 text-primary" />
+                <Check className="w-4 h-4 text-accent" />
               ) : (
                 <Copy className="w-4 h-4" />
               )}

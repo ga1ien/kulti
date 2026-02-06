@@ -12,11 +12,11 @@ export function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
         <AlertCircle className="h-8 w-8 text-red-500" />
       </div>
       <h3 className="text-lg font-semibold mb-2">Something went wrong</h3>
-      <p className="text-textMuted text-center mb-4">{message}</p>
+      <p className="text-muted-3 text-center mb-4">{message}</p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary/90 transition-colors"
+          className="px-4 py-2 bg-accent text-black rounded-lg hover:bg-accent/80 transition-colors"
         >
           Try Again
         </button>

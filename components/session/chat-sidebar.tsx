@@ -108,22 +108,22 @@ export function ChatSidebar({ sessionId, userId }: ChatSidebarProps) {
           <div key={message.id} className="space-y-1">
             {message.type === "system" ? (
               <div className="text-center">
-                <p className="text-xs text-textMuted">{message.content}</p>
+                <p className="text-xs text-muted-3">{message.content}</p>
               </div>
             ) : (
               <>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-black text-xs font-bold">
+                  <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-black text-xs font-bold">
                     {message.profile?.display_name[0].toUpperCase()}
                   </div>
                   <span className="text-sm font-medium">
                     {message.profile?.display_name}
                   </span>
-                  <span className="text-xs text-textMuted">
+                  <span className="text-xs text-muted-3">
                     {formatTime(message.created_at)}
                   </span>
                 </div>
-                <p className="text-sm text-textSecondary pl-8">
+                <p className="text-sm text-muted-2 pl-8">
                   {message.content}
                 </p>
               </>

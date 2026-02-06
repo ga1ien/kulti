@@ -57,13 +57,13 @@ export function WaitlistForm() {
   if (isSubmitted && position) {
     return (
       <div className="max-w-md mx-auto text-center p-8 bg-surface border border-border-default rounded-lg">
-        <h3 className="text-2xl font-bold font-mono text-primary mb-2">
+        <h3 className="text-2xl font-bold font-mono text-accent mb-2">
           You're in!
         </h3>
-        <p className="text-lg text-textSecondary mb-4">
-          You're <span className="text-primary font-bold">#{position}</span> in line
+        <p className="text-lg text-muted-2 mb-4">
+          You're <span className="text-accent font-bold">#{position}</span> in line
         </p>
-        <p className="text-sm text-textMuted">
+        <p className="text-sm text-muted-3">
           We'll email you when it's your turn to join Kulti.
         </p>
       </div>

@@ -135,7 +135,7 @@ export const VideoTile = memo(function VideoTile({ peer, isLocal, isScreenShare,
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
             <User size={32} className="text-black" />
           </div>
         </div>
@@ -162,7 +162,7 @@ export const VideoTile = memo(function VideoTile({ peer, isLocal, isScreenShare,
               {displayName}
             </span>
             {peer.roleName === "host" && (
-              <span className="px-2 py-0.5 bg-primary text-black text-xs rounded font-bold">
+              <span className="px-2 py-0.5 bg-accent text-black text-xs rounded font-bold">
                 HOST
               </span>
             )}

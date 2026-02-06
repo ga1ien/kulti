@@ -19,7 +19,7 @@ const ErrorPage = ({ error, reset }: ErrorProps) => {
   const isDevelopment = process.env.NODE_ENV === "development";
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-black flex items-center justify-center px-4">
       <div className="max-w-2xl w-full text-center space-y-8">
         {/* Error Icon */}
         <div className="flex justify-center">
@@ -46,7 +46,7 @@ const ErrorPage = ({ error, reset }: ErrorProps) => {
           <h1 className="font-mono text-3xl md:text-4xl font-bold text-white">
             Something Went Wrong
           </h1>
-          <p className="text-textSecondary text-lg max-w-md mx-auto">
+          <p className="text-muted-2 text-lg max-w-md mx-auto">
             We're working on fixing this issue. Please try again in a moment.
           </p>
         </div>
@@ -58,20 +58,20 @@ const ErrorPage = ({ error, reset }: ErrorProps) => {
               Error Details (Development Mode)
             </h3>
             <div className="space-y-2">
-              <p className="font-mono text-xs text-textSecondary break-all">
-                <span className="text-textMuted">Message:</span> {error.message}
+              <p className="font-mono text-xs text-muted-2 break-all">
+                <span className="text-muted-3">Message:</span> {error.message}
               </p>
               {error.digest && (
-                <p className="font-mono text-xs text-textSecondary">
-                  <span className="text-textMuted">Digest:</span> {error.digest}
+                <p className="font-mono text-xs text-muted-2">
+                  <span className="text-muted-3">Digest:</span> {error.digest}
                 </p>
               )}
               {error.stack && (
                 <details className="mt-4">
-                  <summary className="font-mono text-xs text-textMuted cursor-pointer hover:text-textSecondary">
+                  <summary className="font-mono text-xs text-muted-3 cursor-pointer hover:text-muted-2">
                     Stack Trace
                   </summary>
-                  <pre className="mt-2 font-mono text-xs text-textSecondary overflow-x-auto whitespace-pre-wrap">
+                  <pre className="mt-2 font-mono text-xs text-muted-2 overflow-x-auto whitespace-pre-wrap">
                     {error.stack}
                   </pre>
                 </details>
@@ -99,11 +99,11 @@ const ErrorPage = ({ error, reset }: ErrorProps) => {
 
         {/* Support Info */}
         <div className="pt-8">
-          <p className="text-textMuted text-sm">
+          <p className="text-muted-3 text-sm">
             If this problem persists,{" "}
             <Link
               href="/settings"
-              className="text-primary hover:underline transition-colors"
+              className="text-accent hover:underline transition-colors"
             >
               contact support
             </Link>

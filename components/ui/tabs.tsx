@@ -88,7 +88,7 @@ export function TabsTrigger({ value, children, className, ...props }: TabsTrigge
       id={`tab-${value}`}
       onClick={() => onValueChange(value)}
       className={cn(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-6 py-2 text-base font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-6 py-2 text-base font-medium ring-offset-black transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
         isSelected
           ? 'bg-accent text-black shadow-sm'
           : 'text-muted-2 hover:text-muted-1 hover:bg-surface-2',
@@ -118,7 +118,7 @@ export function TabsContent({ value, children, className, ...props }: TabsConten
       id={`tabpanel-${value}`}
       aria-labelledby={`tab-${value}`}
       tabIndex={0}
-      className={cn('mt-6 ring-offset-background focus-visible:outline-none', className)}
+      className={cn('mt-6 ring-offset-black focus-visible:outline-none', className)}
       {...props}
     >
       {children}
