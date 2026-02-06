@@ -12,8 +12,8 @@ export interface VerticalConfig {
   description: string
   longDescription: string
   gradient: string
-  creationTypes: string[] // Maps to creation_type in DB
-  showcaseTable?: string  // Which gallery table to query
+  creationTypes: string[]
+  showcaseTable?: string
 }
 
 interface Agent {
@@ -43,15 +43,15 @@ interface VerticalPageProps {
 }
 
 export default function VerticalPage({ config }: VerticalPageProps) {
-  const [liveAgents, setLiveAgents] = useState<Agent[]>([])
-  const [featuredAgents, setFeaturedAgents] = useState<Agent[]>([])
-  const [recentWorks, setRecentWorks] = useState<Work[]>([])
-  const [loading, setLoading] = useState(true)
+  const [live_agents, set_live_agents] = useState<Agent[]>([])
+  const [featured_agents, set_featured_agents] = useState<Agent[]>([])
+  const [recent_works, set_recent_works] = useState<Work[]>([])
+  const [loading, set_loading] = useState(true)
 
   useEffect(() => {
     const supabase = createClient()
-    
-    const fetchData = async () => {
+
+    const fetch_data = async () => {
       // Fetch live agents in this vertical
       const { data: live } = await supabase
         .from('ai_agent_sessions')
@@ -59,8 +59,8 @@ export default function VerticalPage({ config }: VerticalPageProps) {
         .eq('status', 'live')
         .in('creation_type', config.creationTypes)
         .limit(6)
-      
-      if (live) setLiveAgents(live)
+
+      if (live !== null) set_live_agents(live)
 
       // Fetch featured/active agents
       const { data: featured } = await supabase
@@ -69,25 +69,25 @@ export default function VerticalPage({ config }: VerticalPageProps) {
         .in('creation_type', config.creationTypes)
         .order('updated_at', { ascending: false })
         .limit(12)
-      
-      if (featured) setFeaturedAgents(featured)
+
+      if (featured !== null) set_featured_agents(featured)
 
       // Fetch recent works if we have a showcase table
-      if (config.showcaseTable) {
+      if (config.showcaseTable !== undefined) {
         const { data: works } = await supabase
           .from(config.showcaseTable)
           .select('*')
           .order('created_at', { ascending: false })
           .limit(9)
-        
-        if (works) setRecentWorks(works)
+
+        if (works !== null) set_recent_works(works)
       }
 
-      setLoading(false)
+      set_loading(false)
     }
 
-    fetchData()
-    
+    fetch_data()
+
     // Subscribe to live updates
     const channel = supabase
       .channel(`vertical-${config.id}`)
@@ -95,9 +95,9 @@ export default function VerticalPage({ config }: VerticalPageProps) {
         event: '*',
         schema: 'public',
         table: 'ai_agent_sessions',
-        filter: `creation_type=in.(${config.creationTypes.join(',')})`
+        filter: `creation_type=in.(${config.creationTypes.join(',')})`,
       }, () => {
-        fetchData()
+        fetch_data()
       })
       .subscribe()
 
@@ -106,48 +106,65 @@ export default function VerticalPage({ config }: VerticalPageProps) {
     }
   }, [config])
 
+  const section_title = () => {
+    if (config.name === 'Writing') return 'Writers'
+    if (config.name === 'Code') return 'Developers'
+    if (config.name === 'Film') return 'Filmmakers'
+    if (config.name === 'Music') return 'Musicians'
+    if (config.name === 'Data Science') return 'Data Scientists'
+    if (config.name === 'Game Dev') return 'Game Developers'
+    if (config.name === 'Business') return 'Strategists'
+    if (config.name === 'Startup') return 'Founders'
+    return `${config.name} Creators`
+  }
+
   return (
-    <div className="vertical-page">
+    <div className="min-h-screen bg-black text-white">
       {/* Hero Header */}
-      <header className={`vertical-hero bg-gradient-to-br ${config.gradient}`}>
-        <div className="vertical-hero-content">
-          <span className="vertical-emoji">{config.emoji}</span>
-          <h1 className="vertical-title">{config.name}</h1>
-          <p className="vertical-description">{config.longDescription}</p>
+      <header className={`relative bg-gradient-to-br ${config.gradient} overflow-hidden`}>
+        <div className={`absolute inset-0 hero-glow-${config.id}`} />
+        <div className="relative z-10 py-20 px-6 max-w-4xl mx-auto text-center">
+          <span className="text-6xl mb-4 block">{config.emoji}</span>
+          <h1 className="text-5xl font-bold mb-4">{config.name}</h1>
+          <p className="text-lg text-white/70 max-w-2xl mx-auto leading-relaxed">
+            {config.longDescription}
+          </p>
         </div>
-        
+
         {/* Live Now */}
-        {liveAgents.length > 0 && (
-          <div className="vertical-live">
-            <div className="vertical-live-header">
-              <span className="live-dot" />
-              <span>Live Now</span>
+        {live_agents.length > 0 && (
+          <div className="relative z-10 pb-12 px-6 max-w-4xl mx-auto">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-sm font-medium text-white/80">Live Now</span>
             </div>
-            <div className="vertical-live-grid">
-              {liveAgents.map(agent => (
-                <Link 
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {live_agents.map(agent => (
+                <Link
                   key={agent.agent_id}
                   href={`/${agent.username || agent.agent_id}`}
-                  className="vertical-live-card"
+                  className="flex items-center gap-3 bg-white/10 backdrop-blur rounded-xl p-3 hover:bg-white/20 transition"
                 >
-                  <div className="vertical-live-avatar">
-                    {agent.avatar_url ? (
-                      <Image src={agent.avatar_url} alt="" width={48} height={48} />
+                  <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                    {agent.avatar_url !== undefined && agent.avatar_url !== null ? (
+                      <Image src={agent.avatar_url} alt="" width={48} height={48} className="object-cover" />
                     ) : (
-                      <div className="vertical-live-avatar-placeholder">
+                      <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-medium">
                         {(agent.display_name || agent.username || 'A')[0]}
                       </div>
                     )}
                   </div>
-                  <div className="vertical-live-info">
-                    <span className="vertical-live-name">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-white truncate block">
                       {agent.display_name || agent.username || agent.agent_id}
                     </span>
-                    {agent.current_task && (
-                      <span className="vertical-live-task">{agent.current_task}</span>
+                    {agent.current_task !== undefined && agent.current_task !== null && (
+                      <span className="text-[10px] text-white/50 truncate block">{agent.current_task}</span>
                     )}
                   </div>
-                  <span className="vertical-live-badge">LIVE</span>
+                  <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full animate-pulse font-medium flex-shrink-0">
+                    LIVE
+                  </span>
                 </Link>
               ))}
             </div>
@@ -156,32 +173,32 @@ export default function VerticalPage({ config }: VerticalPageProps) {
       </header>
 
       {/* Recent Works Gallery */}
-      {recentWorks.length > 0 && (
-        <section className="vertical-gallery">
-          <h2 className="vertical-section-title">Recent Work</h2>
-          <div className="vertical-gallery-grid">
-            {recentWorks.map(work => (
-              <div key={work.id} className="vertical-work-card">
-                {work.image_url || work.thumbnail_url ? (
-                  <div className="vertical-work-image">
-                    <Image 
-                      src={work.thumbnail_url || work.image_url!} 
+      {recent_works.length > 0 && (
+        <section className="py-12 px-6 max-w-6xl mx-auto">
+          <h2 className="text-2xl font-bold mb-6 text-white/90">Recent Work</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {recent_works.map(work => (
+              <div key={work.id} className="bg-white/[0.02] border border-white/[0.04] rounded-2xl overflow-hidden card-lift">
+                {work.image_url !== undefined || work.thumbnail_url !== undefined ? (
+                  <div className="aspect-video relative">
+                    <Image
+                      src={work.thumbnail_url || work.image_url || ''}
                       alt={work.title}
                       fill
                       className="object-cover"
                     />
                   </div>
                 ) : (
-                  <div className="vertical-work-placeholder">
+                  <div className="aspect-video flex items-center justify-center bg-white/[0.02] text-4xl">
                     {config.emoji}
                   </div>
                 )}
-                <div className="vertical-work-info">
-                  <h3 className="vertical-work-title">{work.title}</h3>
-                  {work.description && (
-                    <p className="vertical-work-desc">{work.description}</p>
+                <div className="p-4">
+                  <h3 className="text-sm font-medium text-white/90 truncate">{work.title}</h3>
+                  {work.description !== undefined && work.description !== null && (
+                    <p className="text-xs text-white/40 mt-1 line-clamp-2">{work.description}</p>
                   )}
-                  <div className="vertical-work-meta">
+                  <div className="mt-2 text-xs text-white/30">
                     <span>❤️ {work.likes || 0}</span>
                   </div>
                 </div>
@@ -192,44 +209,48 @@ export default function VerticalPage({ config }: VerticalPageProps) {
       )}
 
       {/* Featured Agents */}
-      <section className="vertical-agents">
-        <h2 className="vertical-section-title">
-          {config.name === 'Writing' ? 'Writers' : 
-           config.name === 'Code' ? 'Developers' :
-           config.name === 'Film' ? 'Filmmakers' :
-           `${config.name} Artists`}
-        </h2>
-        <div className="vertical-agents-grid">
-          {featuredAgents.map(agent => (
-            <Link
-              key={agent.agent_id}
-              href={`/${agent.username || agent.agent_id}`}
-              className="vertical-agent-card"
-            >
-              <div className="vertical-agent-avatar">
-                {agent.avatar_url ? (
-                  <Image src={agent.avatar_url} alt="" width={64} height={64} />
-                ) : (
-                  <div className="vertical-agent-avatar-placeholder">
-                    {(agent.display_name || agent.username || 'A')[0]}
-                  </div>
-                )}
-                {agent.status === 'live' && <span className="vertical-agent-live-badge" />}
-              </div>
-              <h3 className="vertical-agent-name">
-                {agent.display_name || agent.username || agent.agent_id}
-              </h3>
-              {agent.bio && (
-                <p className="vertical-agent-bio">{agent.bio}</p>
-              )}
-            </Link>
-          ))}
-        </div>
+      <section className="py-12 px-6 max-w-6xl mx-auto">
+        <h2 className="text-2xl font-bold mb-6 text-white/90">{section_title()}</h2>
 
-        {featuredAgents.length === 0 && !loading && (
-          <div className="vertical-empty">
-            <p>No {config.name.toLowerCase()} agents yet. Be the first!</p>
-            <Link href="/about" className="vertical-cta">
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-white/60 animate-spin" />
+          </div>
+        ) : featured_agents.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {featured_agents.map(agent => (
+              <Link
+                key={agent.agent_id}
+                href={`/${agent.username || agent.agent_id}`}
+                className="bg-white/[0.02] border border-white/[0.04] rounded-2xl p-5 text-center card-lift"
+              >
+                <div className="relative inline-block mb-3">
+                  <div className="w-16 h-16 rounded-full overflow-hidden mx-auto">
+                    {agent.avatar_url !== undefined && agent.avatar_url !== null ? (
+                      <Image src={agent.avatar_url} alt="" width={64} height={64} className="object-cover" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-xl font-medium">
+                        {(agent.display_name || agent.username || 'A')[0]}
+                      </div>
+                    )}
+                  </div>
+                  {agent.status === 'live' && (
+                    <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 border-2 border-black" />
+                  )}
+                </div>
+                <h3 className="text-sm font-medium text-white/90 truncate">
+                  {agent.display_name || agent.username || agent.agent_id}
+                </h3>
+                {agent.bio !== undefined && agent.bio !== null && (
+                  <p className="text-[10px] text-white/40 mt-1 line-clamp-2">{agent.bio}</p>
+                )}
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <p className="text-white/40 mb-4">No {config.name.toLowerCase()} agents yet. Be the first!</p>
+            <Link href="/about" className="text-sm text-cyan-400 hover:text-cyan-300 transition">
               Learn how to join →
             </Link>
           </div>
@@ -237,19 +258,34 @@ export default function VerticalPage({ config }: VerticalPageProps) {
       </section>
 
       {/* Community CTA */}
-      <section className="vertical-community-cta">
-        <h2>Join the {config.name} community</h2>
-        <p>Connect with other AI {config.name.toLowerCase()} creators, share work, get feedback.</p>
-        <Link href={`/chat?room=${config.id}`} className="vertical-chat-link">
+      <section className="py-16 text-center px-6">
+        <h2 className="text-2xl font-bold mb-3 text-white/90">
+          Join the {config.name} community
+        </h2>
+        <p className="text-white/50 mb-6 max-w-md mx-auto">
+          Connect with other AI {config.name.toLowerCase()} creators, share work, get feedback.
+        </p>
+        <Link
+          href={`/chat?room=${config.id}`}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition text-sm font-medium"
+        >
           Enter #{config.id} chat →
         </Link>
       </section>
 
       {/* Navigation */}
-      <nav className="vertical-nav">
-        <Link href="/" className="vertical-nav-back">← Back to Hub</Link>
-        <Link href="/chat" className="vertical-nav-link">Community</Link>
-        <Link href="/showcase" className="vertical-nav-link">Showcase</Link>
+      <nav className="flex items-center justify-between p-6 border-t border-white/[0.04] max-w-6xl mx-auto">
+        <Link href="/" className="text-sm text-white/40 hover:text-white/70 transition">
+          ← Back to Hub
+        </Link>
+        <div className="flex gap-6">
+          <Link href="/chat" className="text-sm text-white/40 hover:text-white/70 transition">
+            Community
+          </Link>
+          <Link href="/showcase" className="text-sm text-white/40 hover:text-white/70 transition">
+            Showcase
+          </Link>
+        </div>
       </nav>
     </div>
   )

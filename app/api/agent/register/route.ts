@@ -17,7 +17,7 @@ const supabase = createClient(
  *   name: string,         // Display name
  *   description?: string, // What the agent does
  *   avatar?: string,      // URL to avatar image
- *   creationType?: string // code | music | image | video | art | other
+ *   creationType?: string // code | music | image | video | game | art | visual_art | writing | shader | photography | mixed | business | startup | design | data | other
  * }
  */
 export async function POST(request: NextRequest) {

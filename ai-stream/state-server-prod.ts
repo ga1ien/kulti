@@ -11,6 +11,8 @@
  *   - snake_case + camelCase field compat
  *   - /hook endpoint for fire-and-forget adapter events
  *   - Supabase persistence + hydration
+ *   - Redis write-through cache for state resilience
+ *   - GET /agents endpoint for browse page
  */
 
 import { createServer, IncomingMessage, ServerResponse } from 'http';
@@ -44,6 +46,160 @@ if (valid_api_keys === null) {
   console.log('[AUTH] WARNING: KULTI_API_KEYS not set - running without auth');
 } else {
   console.log(`[AUTH] ${valid_api_keys.size} API key(s) loaded`);
+}
+
+// Redis configuration (Upstash REST API)
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const REDIS_ENABLED = REDIS_URL !== undefined && REDIS_TOKEN !== undefined && REDIS_URL.length > 0;
+
+if (REDIS_ENABLED) {
+  console.log('[Redis] Upstash REST API enabled');
+} else {
+  console.log('[Redis] Not configured - running without state persistence');
+}
+
+// Redis helpers (Upstash REST API, no npm dependency)
+async function redis_set(key: string, value: string, ttl_seconds: number): Promise<void> {
+  if (!REDIS_ENABLED) return;
+  fetch(`${REDIS_URL}/SET/${encodeURIComponent(key)}/${encodeURIComponent(value)}/EX/${ttl_seconds}`, {
+    headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+  }).catch((err) => {
+    console.error('[Redis] SET error:', err);
+  });
+}
+
+async function redis_get(key: string): Promise<string | null> {
+  if (!REDIS_ENABLED) return null;
+  try {
+    const resp = await fetch(`${REDIS_URL}/GET/${encodeURIComponent(key)}`, {
+      headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+    });
+    const data = await resp.json() as { result: string | null };
+    return data.result;
+  } catch (err) {
+    console.error('[Redis] GET error:', err);
+    return null;
+  }
+}
+
+async function redis_keys(pattern: string): Promise<string[]> {
+  if (!REDIS_ENABLED) return [];
+  try {
+    const resp = await fetch(`${REDIS_URL}/KEYS/${encodeURIComponent(pattern)}`, {
+      headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+    });
+    const data = await resp.json() as { result: string[] };
+    return data.result;
+  } catch (err) {
+    console.error('[Redis] KEYS error:', err);
+    return [];
+  }
+}
+
+// State serialization for Redis (excludes non-serializable fields like viewers Set)
+interface SerializedAgentState {
+  agent_id: string;
+  agent_name: string;
+  agent_avatar: string;
+  status: string;
+  task: { title: string; description?: string };
+  terminal: Array<{ type: string; content: string; timestamp?: string }>;
+  thinking: string;
+  thoughts: StructuredThought[];
+  code: CodeState | null;
+  diff: DiffState | null;
+  goal: GoalState | null;
+  milestones: MilestoneState[];
+  recent_errors: ErrorState[];
+  stats: { files: number; commands: number; start_time: number };
+  preview: { url: string | null; domain: string };
+  viewer_count: number;
+  hydrated: boolean;
+  last_update: number;
+}
+
+function serialize_agent_state(state: AgentState): string {
+  const serialized: SerializedAgentState = {
+    agent_id: state.agent_id,
+    agent_name: state.agent_name,
+    agent_avatar: state.agent_avatar,
+    status: state.status,
+    task: state.task,
+    terminal: state.terminal.slice(-50), // Limit stored terminal lines
+    thinking: state.thinking,
+    thoughts: state.thoughts.slice(-20), // Limit stored thoughts
+    code: state.code,
+    diff: state.diff,
+    goal: state.goal,
+    milestones: state.milestones,
+    recent_errors: state.recent_errors,
+    stats: state.stats,
+    preview: state.preview,
+    viewer_count: state.viewer_count,
+    hydrated: state.hydrated,
+    last_update: Date.now(),
+  };
+  return JSON.stringify(serialized);
+}
+
+function deserialize_agent_state(json_str: string): AgentState | null {
+  try {
+    const data = JSON.parse(json_str) as SerializedAgentState;
+    return {
+      agent_id: data.agent_id,
+      agent_name: data.agent_name,
+      agent_avatar: data.agent_avatar,
+      status: data.status as AgentState['status'],
+      task: data.task,
+      terminal: data.terminal,
+      thinking: data.thinking,
+      thoughts: data.thoughts,
+      code: data.code,
+      diff: data.diff,
+      goal: data.goal,
+      milestones: data.milestones,
+      recent_errors: data.recent_errors,
+      stats: data.stats,
+      preview: data.preview,
+      viewers: new Set(),
+      viewer_count: 0, // Reset viewer count on restore
+      hydrated: data.hydrated,
+    };
+  } catch (err) {
+    console.error('[Redis] Deserialize error:', err);
+    return null;
+  }
+}
+
+async function hydrate_from_redis(): Promise<number> {
+  if (!REDIS_ENABLED) return 0;
+  try {
+    const keys = await redis_keys('kulti:state:*');
+    let restored = 0;
+    for (const key of keys) {
+      const value = await redis_get(key);
+      if (value === null) continue;
+      const state = deserialize_agent_state(value);
+      if (state === null) continue;
+      // Only restore if not already in memory
+      if (!agents.has(state.agent_id)) {
+        agents.set(state.agent_id, state);
+        restored += 1;
+      }
+    }
+    return restored;
+  } catch (err) {
+    console.error('[Redis] Hydration error:', err);
+    return 0;
+  }
+}
+
+function persist_to_redis(agent_id: string, state: AgentState): void {
+  const key = `kulti:state:${agent_id}`;
+  const value = serialize_agent_state(state);
+  // Fire-and-forget with 1 hour TTL
+  redis_set(key, value, 3600);
 }
 
 // Structured thought types
@@ -424,6 +580,9 @@ function apply_update(update: UpdatePayload, is_hook: boolean): void {
 
   // Persist to Supabase (async)
   persist_to_supabase(agent_id, update, state).catch(console.error);
+
+  // Persist to Redis (fire-and-forget)
+  persist_to_redis(agent_id, state);
 }
 
 function check_api_key(req: IncomingMessage): boolean {
@@ -668,6 +827,43 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     return;
   }
 
+  // GET /agents — summary of all tracked agents for browse page
+  if (req.method === 'GET' && req.url === '/agents') {
+    const agent_summaries: Array<{
+      agent_id: string;
+      agent_name: string;
+      agent_avatar: string;
+      status: string;
+      viewer_count: number;
+      last_thought: string | null;
+      current_file: string | null;
+      current_task: string | null;
+      last_update: number;
+    }> = [];
+
+    for (const [id, state] of agents) {
+      const last_thought_entry = state.thoughts.length > 0
+        ? state.thoughts[state.thoughts.length - 1]
+        : null;
+
+      agent_summaries.push({
+        agent_id: id,
+        agent_name: state.agent_name,
+        agent_avatar: state.agent_avatar,
+        status: state.status,
+        viewer_count: state.viewer_count,
+        last_thought: last_thought_entry !== null ? last_thought_entry.content.slice(0, 200) : null,
+        current_file: state.code !== null ? state.code.filename : null,
+        current_task: state.task.title,
+        last_update: Date.now(),
+      });
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(agent_summaries));
+    return;
+  }
+
   if (req.method !== 'POST') {
     res.writeHead(405);
     res.end('Method not allowed');
@@ -792,12 +988,27 @@ wss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
   });
 });
 
-// Start server
-server.listen(PORT, () => {
-  console.log(`Kulti State Server running on port ${PORT}`);
-  console.log(`  HTTP: http://localhost:${PORT}`);
-  console.log(`  WebSocket: ws://localhost:${PORT}`);
-  console.log(`  Endpoints: POST / (full update), POST /hook (fire-and-forget)`);
+// Start server with Redis hydration
+async function start_server(): Promise<void> {
+  // Hydrate state from Redis before accepting connections
+  if (REDIS_ENABLED) {
+    const restored = await hydrate_from_redis();
+    if (restored > 0) {
+      console.log(`[Redis] Restored ${restored} agent state(s) from Redis`);
+    }
+  }
+
+  server.listen(PORT, () => {
+    console.log(`Kulti State Server running on port ${PORT}`);
+    console.log(`  HTTP: http://localhost:${PORT}`);
+    console.log(`  WebSocket: ws://localhost:${PORT}`);
+    console.log(`  Endpoints: POST / (full update), POST /hook (fire-and-forget), GET /agents`);
+  });
+}
+
+start_server().catch((err) => {
+  console.error('[Startup] Failed to start server:', err);
+  process.exit(1);
 });
 
 // Graceful shutdown
